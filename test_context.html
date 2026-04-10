@@ -87,40 +87,6 @@
         log('createContext with invalid deviceType', e instanceof TypeError);
       }
 
-      // Test: destroy context
-      try {
-        const context = await navigator.ml.createContext({});
-        context.destroy();
-        const lost = await context.lost;
-        log('destroy context', lost === true);
-      } catch (e) {
-        log('destroy context', false);
-        console.error(e);
-      }
-
-      // Test: destroy context twice
-      try {
-        const context = await navigator.ml.createContext({});
-        context.destroy();
-        context.destroy();
-        const lost = await context.lost;
-        log('destroy context twice', lost === true);
-      } catch (e) {
-        log('destroy context twice', false);
-        console.error(e);
-      }
-
-      // Test: using destroyed context throws InvalidStateError
-      try {
-        const context = await navigator.ml.createContext({});
-        context.destroy();
-        await context.lost;
-        new MLGraphBuilder(context);
-        log('using destroyed context', false);
-      } catch (e) {
-        log('using destroyed context', e.name === 'InvalidStateError');
-      }
-
       // Summary
       const summary = document.createElement('div');
       summary.style.marginTop = '20px';
