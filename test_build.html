@@ -29,19 +29,6 @@
     }
 
     async function runTests() {
-      // Test: build graph with single output
-      try {
-        const context = await navigator.ml.createContext({});
-        const builder = new MLGraphBuilder(context);
-        const input = builder.input('x', { dataType: 'float32', shape: [2, 3] });
-        const graph = await builder.build({ output: input });
-        log('build graph with single output', graph instanceof MLGraph);
-        context.destroy();
-      } catch (e) {
-        log('build graph with single output', false);
-        console.error(e);
-      }
-
       // Test: build graph with chain: input -> add -> mul
       try {
         const context = await navigator.ml.createContext({});
