@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MLContext Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>MLContext Tests</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      div.textContent = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      // Test: createContext with empty options
+      try {
+        const context = await navigator.ml.createContext({});
+        log('createContext with empty options', context instanceof MLContext);
+        context.destroy();
+      } catch (e) {
+        log('createContext with empty options', false);
+        console.error(e);
+      }
+
+      // Test: createContext with deviceType cpu
+      try {
+        const context = await navigator.ml.createContext({ deviceType: 'cpu' });
+        log('createContext with deviceType cpu', context instanceof MLContext);
+        context.destroy();
+      } catch (e) {
+        log('createContext with deviceType cpu', false);
+        console.error(e);
+      }
+
+      // Test: createContext with deviceType gpu
+      try {
+        const context = await navigator.ml.createContext({ deviceType: 'gpu' });
+        log('createContext with deviceType gpu', context instanceof MLContext);
+        context.destroy();
+      } catch (e) {
+        log('createContext with deviceType gpu', false);
+        console.error(e);
+      }
+
+      // Test: createContext with powerPreference high-performance
+      try {
+        const context = await navigator.ml.createContext({ powerPreference: 'high-performance' });
+        log('createContext with powerPreference high-performance', context instanceof MLContext);
+        context.destroy();
+      } catch (e) {
+        log('createContext with powerPreference high-performance', false);
+        console.error(e);
+      }
+
+      // Test: createContext with powerPreference low-power
+      try {
+        const context = await navigator.ml.createContext({ powerPreference: 'low-power' });
+        log('createContext with powerPreference low-power', context instanceof MLContext);
+        context.destroy();
+      } catch (e) {
+        log('createContext with powerPreference low-power', false);
+        console.error(e);
+      }
+
+      // Test: createContext with invalid deviceType
+      try {
+        await navigator.ml.createContext({ deviceType: 'invalid' });
+        log('createContext with invalid deviceType', false);
+      } catch (e) {
+        log('createContext with invalid deviceType', e instanceof TypeError);
+      }
+
+      // Test: destroy context
+      try {
+        const context = await navigator.ml.createContext({});
+        context.destroy();
+        const lost = await context.lost;
+        log('destroy context', lost === true);
+      } catch (e) {
+        log('destroy context', false);
+        console.error(e);
+      }
+
+      // Test: destroy context twice
+      try {
+        const context = await navigator.ml.createContext({});
+        context.destroy();
+        context.destroy();
+        const lost = await context.lost;
+        log('destroy context twice', lost === true);
+      } catch (e) {
+        log('destroy context twice', false);
+        console.error(e);
+      }
+
+      // Test: using destroyed context throws InvalidStateError
+      try {
+        const context = await navigator.ml.createContext({});
+        context.destroy();
+        await context.lost;
+        new MLGraphBuilder(context);
+        log('using destroyed context', false);
+      } catch (e) {
+        log('using destroyed context', e.name === 'InvalidStateError');
+      }
+
+      // Summary
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

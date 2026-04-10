@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MLGraphBuilder Operators Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>MLGraphBuilder Operators Tests</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      div.textContent = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      // Test: input with 0-D scalar
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const operand = builder.input('x', { dataType: 'float32', shape: [] });
+        const ok = operand instanceof MLOperand && operand.dataType === 'float32' && 
+                   operand.shape.length === 0;
+        log('input with 0-D scalar', ok);
+        context.destroy();
+      } catch (e) {
+        log('input with 0-D scalar', false);
+        console.error(e);
+      }
+
+      // Test: input with 2-D shape
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const operand = builder.input('x', { dataType: 'float32', shape: [2, 3] });
+        const ok = operand instanceof MLOperand && operand.dataType === 'float32' &&
+                   operand.shape[0] === 2 && operand.shape[1] === 3;
+        log('input with 2-D shape', ok);
+        context.destroy();
+      } catch (e) {
+        log('input with 2-D shape', false);
+        console.error(e);
+      }
+
+      // Test: input with empty name
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        builder.input('', { dataType: 'float32', shape: [1] });
+        log('input with empty name', false);
+        context.destroy();
+      } catch (e) {
+        log('input with empty name', e instanceof TypeError);
+      }
+
+      // Test: input with dimension 0
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        builder.input('x', { dataType: 'float32', shape: [0] });
+        log('input with dimension 0', false);
+        context.destroy();
+      } catch (e) {
+        log('input with dimension 0', e instanceof TypeError);
+      }
+
+      // Test: add two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.add(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('add two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('add two operands', false);
+        console.error(e);
+      }
+
+      // Test: mul two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.mul(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('mul two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('mul two operands', false);
+        console.error(e);
+      }
+
+      // Test: cos operator
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.cos(a);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('cos operator', ok);
+        context.destroy();
+      } catch (e) {
+        log('cos operator', false);
+        console.error(e);
+      }
+
+      // Summary
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
