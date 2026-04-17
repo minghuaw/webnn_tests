@@ -121,8 +121,232 @@
                    result.shape[0] === 2 && result.shape[1] === 3;
         log('cos operator', ok);
         context.destroy();
-      } catch (e) {
+       } catch (e) {
         log('cos operator', false);
+        console.error(e);
+      }
+
+      // Test: sub two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.sub(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('sub two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('sub two operands', false);
+        console.error(e);
+      }
+
+      // Test: div two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.div(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('div two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('div two operands', false);
+        console.error(e);
+      }
+
+      // Test: max two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.max(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('max two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('max two operands', false);
+        console.error(e);
+      }
+
+      // Test: min two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.min(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('min two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('min two operands', false);
+        console.error(e);
+      }
+
+      // Test: pow two operands
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.pow(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'float32' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('pow two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('pow two operands', false);
+        console.error(e);
+      }
+
+      // Test: equal two operands (output uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.equal(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('equal two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('equal two operands', false);
+        console.error(e);
+      }
+
+      // Test: notEqual two operands (output uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.notEqual(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('notEqual two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('notEqual two operands', false);
+        console.error(e);
+      }
+
+      // Test: greater two operands (output uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.greater(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('greater two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('greater two operands', false);
+        console.error(e);
+      }
+
+      // Test: greaterOrEqual two operands (output uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.greaterOrEqual(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('greaterOrEqual two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('greaterOrEqual two operands', false);
+        console.error(e);
+      }
+
+      // Test: lesser two operands (output uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.lesser(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('lesser two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('lesser two operands', false);
+        console.error(e);
+      }
+
+      // Test: lesserOrEqual two operands (output uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.lesserOrEqual(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('lesserOrEqual two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('lesserOrEqual two operands', false);
+        console.error(e);
+      }
+
+      // Test: logicalAnd two operands (uint8 inputs and output)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'uint8', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'uint8', shape: [2, 3] });
+        const result = builder.logicalAnd(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('logicalAnd two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('logicalAnd two operands', false);
+        console.error(e);
+      }
+
+      // Test: logicalOr two operands (uint8 inputs and output)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'uint8', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'uint8', shape: [2, 3] });
+        const result = builder.logicalOr(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('logicalOr two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('logicalOr two operands', false);
+        console.error(e);
+      }
+
+      // Test: logicalXor two operands (uint8 inputs and output)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'uint8', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'uint8', shape: [2, 3] });
+        const result = builder.logicalXor(a, b);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 2 && result.shape[1] === 3;
+        log('logicalXor two operands', ok);
+        context.destroy();
+      } catch (e) {
+        log('logicalXor two operands', false);
         console.error(e);
       }
 
