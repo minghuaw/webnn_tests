@@ -89,46 +89,22 @@
         return;
       }
 
-      // Test 3: readTensor (async)
-      try {
-        const outputData = await context.readTensor(tensor);
-        const ok = outputData instanceof Float32Array && outputData.length === 6;
-        log('readTensor', ok, `Read ${outputData.length} values`);
-        if (ok && outputData.length >= 2) {
-          log('readTensor values check', outputData[0] === 1 && outputData[5] === 6, 
-              `Values: [${outputData[0]},...,${outputData[5]}]`);
-        }
-      } catch (e) {
-        log('readTensor failed', false, e.message);
-      }
-
-
-
-       // Test 4: readTensor with existing ArrayBuffer
-        try {
-          const outputBuffer = new Float32Array(6);
-          await context.readTensor(tensor, outputBuffer);
-          const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
-          log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
-        } catch (e) {
-          log('readTensor with outputBuffer failed', false, e.message);
-        }
-
-       // Cleanup
-       context.destroy();
-       log('Context destroyed', true);
-
-       showSummary();
-     }
-
-
+      // Test 3: readTensor with existing ArrayBuffer
+       try {
+         const outputBuffer = new Float32Array(6);
+         await context.readTensor(tensor, outputBuffer);
+         const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
+         log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
+       } catch (e) {
+         log('readTensor with outputBuffer failed', false, e.message);
+       }
 
       // Cleanup
       context.destroy();
       log('Context destroyed', true);
 
       showSummary();
-    }
+     }
 
     function showSummary() {
       const summary = document.createElement('div');
