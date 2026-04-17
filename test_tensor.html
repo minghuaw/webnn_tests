@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MLTensor Tests</title>
+  <title>MLTensor Tests - Following Official Example</title>
   <style>
     body { font-family: monospace; padding: 20px; }
     .pass { color: green; }
@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h1>MLTensor Tests</h1>
+  <h1>MLTensor Tests (Following Official Example Pattern)</h1>
   <div id="results"></div>
   <script>
     'use strict';
@@ -31,8 +31,6 @@
     }
 
     async function runTests() {
-      log('Starting MLTensor tests...', true);
-      
       // Check if WebNN API is available
       if (!navigator.ml) {
         log('WebNN API not available', false, 'navigator.ml is undefined');
@@ -51,71 +49,69 @@
 
       let context;
       try {
-        context = await navigator.ml.createContext({});
-        log('Context created', true);
+        context = await navigator.ml.createContext({ deviceType: 'cpu' });
+        log('Context created', true, 'deviceType: cpu');
       } catch (e) {
         log('Failed to create context', false, e.message);
         showSummary();
         return;
       }
 
-      // Verify context has tensor methods
-      const hasCreateTensor = typeof context.createTensor === 'function';
-      const hasWriteTensor = typeof context.writeTensor === 'function';
-      const hasReadTensor = typeof context.readTensor === 'function';
-      const hasCreateConstantTensor = typeof context.createConstantTensor === 'function';
-      
-      log('context.createTensor exists', hasCreateTensor);
-      log('context.writeTensor exists', hasWriteTensor);
-      log('context.readTensor exists', hasReadTensor);
-      log('context.createConstantTensor exists', hasCreateConstantTensor);
-
-      if (!hasCreateTensor || !hasWriteTensor || !hasReadTensor) {
-        log('Tensor APIs not fully supported', false, 'Some required methods are missing');
-        context.destroy();
-        showSummary();
-        return;
-      }
-
-      // Test 1: createTensor - create a tensor with float32 data type
-      let tensor;
+      // Test 1: createTensor with WRITE usage
+      let writeTensor;
       try {
-        tensor = context.createTensor({
+        const desc = {
           dataType: 'float32',
-          shape: [2, 3]
-        });
-        // Check if MLTensor is defined before using instanceof
-        const isMLTensor = (typeof MLTensor !== 'undefined') ? (tensor instanceof MLTensor) : false;
-        const tensorType = tensor ? tensor.constructor.name : 'null/undefined';
-        log('createTensor', true, `Created ${tensorType} with shape ${JSON.stringify(tensor ? tensor.shape : 'unknown')}`);
+          dimensions: [2, 3],
+          shape: [2, 3],
+          usage: window.MLTensorUsage ? window.MLTensorUsage.WRITE : 'write',
+          writable: true
+        };
         
-        if (typeof MLTensor === 'undefined') {
-          log('MLTensor global not defined', false, 'Cannot verify tensor type');
-        } else if (!isMLTensor) {
-          log('createTensor returned non-MLTensor', false, `Got ${tensorType}`);
-        }
+        // According to example: createTensor returns a Promise
+        writeTensor = await context.createTensor(desc);
+        log('createTensor (WRITE)', true, `Created tensor with shape [${writeTensor.shape}]`);
       } catch (e) {
-        log('createTensor failed', false, e.message);
+        log('createTensor (WRITE) failed', false, e.message);
         context.destroy();
         showSummary();
         return;
       }
 
-      // Test 2: writeTensor - write data to a tensor
+      // Test 2: writeTensor
       try {
-        const data = new Float32Array([1, 2, 3, 4, 5, 6]);
-        context.writeTensor(tensor, data);
+        const buffer = new Float32Array([1, 2, 3, 4, 5, 6]);
+        context.writeTensor(writeTensor, buffer);
         log('writeTensor', true, 'Wrote 6 float32 values');
       } catch (e) {
         log('writeTensor failed', false, e.message);
-        // Continue to next test anyway
+        context.destroy();
+        showSummary();
+        return;
       }
 
-      // Test 3: readTensor - read data from a tensor (async)
+      // Test 3: createTensor with READ usage
+      let readTensor;
       try {
-        const outputData = await context.readTensor(tensor);
+        const desc = {
+          dataType: 'float32',
+          dimensions: [2, 3],
+          shape: [2, 3],
+          usage: window.MLTensorUsage ? window.MLTensorUsage.READ : 'read',
+          readable: true
+        };
+        
+        readTensor = await context.createTensor(desc);
+        log('createTensor (READ)', true, `Created read tensor with shape [${readTensor.shape}]`);
+      } catch (e) {
+        log('createTensor (READ) failed', false, e.message);
+      }
+
+      // Test 4: readTensor (async)
+      try {
+        const outputData = await context.readTensor(writeTensor);
         const ok = outputData instanceof Float32Array && outputData.length === 6;
-        log('readTensor', ok, `Read ${outputData.length} values of type ${outputData.constructor.name}`);
+        log('readTensor', ok, `Read ${outputData.length} values`);
         if (ok && outputData.length >= 2) {
           log('readTensor values check', outputData[0] === 1 && outputData[5] === 6, 
               `Values: [${outputData[0]},...,${outputData[5]}]`);
@@ -124,34 +120,89 @@
         log('readTensor failed', false, e.message);
       }
 
-      // Test 4: readTensor with existing ArrayBuffer
+      // Test 5: readTensor with existing ArrayBuffer
       try {
         const outputBuffer = new Float32Array(6);
-        await context.readTensor(tensor, outputBuffer);
+        await context.readTensor(writeTensor, outputBuffer);
         const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
-        log('readTensor with outputData', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
+        log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
       } catch (e) {
-        log('readTensor with outputData failed', false, e.message);
+        log('readTensor with outputBuffer failed', false, e.message);
       }
 
-      // Test 5: createConstantTensor (if supported)
-      if (hasCreateConstantTensor) {
-        try {
-          const constantData = new Float32Array([10, 20, 30]);
-          const constantTensor = context.createConstantTensor({
-            dataType: 'float32',
-            shape: [3]
-          }, constantData);
-          log('createConstantTensor', constantTensor instanceof MLTensor, 'Created constant tensor');
-          
-          // Try to read from constant tensor
-          const constantValues = await context.readTensor(constantTensor);
-          log('read from constant tensor', constantValues.length === 3, `Read ${constantValues.length} values`);
-        } catch (e) {
-          log('createConstantTensor failed', false, e.message);
-        }
-      } else {
-        log('createConstantTensor skipped', true, 'Method not available');
+      // Test 6: createConstantTensor (from example pattern)
+      try {
+        const constantBuffer = new Float32Array([10, 20, 30, 40]);
+        const constantTensor = context.createConstantTensor({
+          dataType: 'float32',
+          dimensions: [2, 2],
+          shape: [2, 2]
+        }, constantBuffer);
+        log('createConstantTensor', true, 'Created constant tensor');
+        
+        // Try to read from constant tensor
+        const constantValues = await context.readTensor(constantTensor);
+        log('read from constant tensor', constantValues.length === 4, `Read ${constantValues.length} values`);
+      } catch (e) {
+        log('createConstantTensor failed', false, e.message);
+      }
+
+      // Test 7: Simple graph with tensors (following example)
+      try {
+        const builder = new MLGraphBuilder(context);
+        
+        // Create input descriptors matching example pattern
+        const descA = {
+          dataType: 'float32',
+          dimensions: [2, 2],
+          shape: [2, 2]
+        };
+        const descB = {
+          dataType: 'float32',
+          dimensions: [2, 2],
+          shape: [2, 2]
+        };
+        
+        // Build simple graph: c = a + b
+        const a = builder.input('a', descA);
+        const b = builder.input('b', descB);
+        const c = builder.add(a, b);
+        const graph = await builder.build({c});
+        log('build simple graph', true, 'Built graph: c = a + b');
+        
+        // Create tensors for execution
+        const tensorA = await context.createTensor({
+          ...descA,
+          usage: window.MLTensorUsage ? window.MLTensorUsage.WRITE : 'write',
+          writable: true
+        });
+        const tensorB = await context.createTensor({
+          ...descB,
+          usage: window.MLTensorUsage ? window.MLTensorUsage.WRITE : 'write',
+          writable: true
+        });
+        const tensorC = await context.createTensor({
+          dataType: 'float32',
+          dimensions: [2, 2],
+          shape: [2, 2],
+          usage: window.MLTensorUsage ? window.MLTensorUsage.READ : 'read',
+          readable: true
+        });
+        
+        // Write data
+        const bufferA = new Float32Array([1, 2, 3, 4]);
+        const bufferB = new Float32Array([5, 6, 7, 8]);
+        context.writeTensor(tensorA, bufferA);
+        context.writeTensor(tensorB, bufferB);
+        
+        // Execute graph
+        context.dispatch(graph, {a: tensorA, b: tensorB}, {c: tensorC});
+        
+        // Read results
+        const results = await context.readTensor(tensorC);
+        log('graph execution with tensors', results.length === 4, `Got ${results.length} results`);
+      } catch (e) {
+        log('graph execution test failed', false, e.message);
       }
 
       // Cleanup
