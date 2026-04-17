@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MLTensor Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>MLTensor Tests</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      log('Starting MLTensor tests...', true);
+      
+      // Check if WebNN API is available
+      if (!navigator.ml) {
+        log('WebNN API not available', false, 'navigator.ml is undefined');
+        showSummary();
+        return;
+      }
+      log('WebNN API available', true);
+
+      // Check secure context (WebNN requires HTTPS or localhost)
+      if (!window.isSecureContext) {
+        log('Not in secure context', false, 'WebNN requires HTTPS or localhost. File:// URLs will not work.');
+        showSummary();
+        return;
+      }
+      log('Secure context OK', true);
+
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+        log('Context created', true);
+      } catch (e) {
+        log('Failed to create context', false, e.message);
+        showSummary();
+        return;
+      }
+
+      // Verify context has tensor methods
+      const hasCreateTensor = typeof context.createTensor === 'function';
+      const hasWriteTensor = typeof context.writeTensor === 'function';
+      const hasReadTensor = typeof context.readTensor === 'function';
+      const hasCreateConstantTensor = typeof context.createConstantTensor === 'function';
+      
+      log('context.createTensor exists', hasCreateTensor);
+      log('context.writeTensor exists', hasWriteTensor);
+      log('context.readTensor exists', hasReadTensor);
+      log('context.createConstantTensor exists', hasCreateConstantTensor);
+
+      if (!hasCreateTensor || !hasWriteTensor || !hasReadTensor) {
+        log('Tensor APIs not fully supported', false, 'Some required methods are missing');
+        context.destroy();
+        showSummary();
+        return;
+      }
+
+      // Test 1: createTensor - create a tensor with float32 data type
+      let tensor;
+      try {
+        tensor = context.createTensor({
+          dataType: 'float32',
+          shape: [2, 3]
+        });
+        // Check if MLTensor is defined before using instanceof
+        const isMLTensor = (typeof MLTensor !== 'undefined') ? (tensor instanceof MLTensor) : false;
+        const tensorType = tensor ? tensor.constructor.name : 'null/undefined';
+        log('createTensor', true, `Created ${tensorType} with shape ${JSON.stringify(tensor ? tensor.shape : 'unknown')}`);
+        
+        if (typeof MLTensor === 'undefined') {
+          log('MLTensor global not defined', false, 'Cannot verify tensor type');
+        } else if (!isMLTensor) {
+          log('createTensor returned non-MLTensor', false, `Got ${tensorType}`);
+        }
+      } catch (e) {
+        log('createTensor failed', false, e.message);
+        context.destroy();
+        showSummary();
+        return;
+      }
+
+      // Test 2: writeTensor - write data to a tensor
+      try {
+        const data = new Float32Array([1, 2, 3, 4, 5, 6]);
+        context.writeTensor(tensor, data);
+        log('writeTensor', true, 'Wrote 6 float32 values');
+      } catch (e) {
+        log('writeTensor failed', false, e.message);
+        // Continue to next test anyway
+      }
+
+      // Test 3: readTensor - read data from a tensor (async)
+      try {
+        const outputData = await context.readTensor(tensor);
+        const ok = outputData instanceof Float32Array && outputData.length === 6;
+        log('readTensor', ok, `Read ${outputData.length} values of type ${outputData.constructor.name}`);
+        if (ok && outputData.length >= 2) {
+          log('readTensor values check', outputData[0] === 1 && outputData[5] === 6, 
+              `Values: [${outputData[0]},...,${outputData[5]}]`);
+        }
+      } catch (e) {
+        log('readTensor failed', false, e.message);
+      }
+
+      // Test 4: readTensor with existing ArrayBuffer
+      try {
+        const outputBuffer = new Float32Array(6);
+        await context.readTensor(tensor, outputBuffer);
+        const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
+        log('readTensor with outputData', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
+      } catch (e) {
+        log('readTensor with outputData failed', false, e.message);
+      }
+
+      // Test 5: createConstantTensor (if supported)
+      if (hasCreateConstantTensor) {
+        try {
+          const constantData = new Float32Array([10, 20, 30]);
+          const constantTensor = context.createConstantTensor({
+            dataType: 'float32',
+            shape: [3]
+          }, constantData);
+          log('createConstantTensor', constantTensor instanceof MLTensor, 'Created constant tensor');
+          
+          // Try to read from constant tensor
+          const constantValues = await context.readTensor(constantTensor);
+          log('read from constant tensor', constantValues.length === 3, `Read ${constantValues.length} values`);
+        } catch (e) {
+          log('createConstantTensor failed', false, e.message);
+        }
+      } else {
+        log('createConstantTensor skipped', true, 'Method not available');
+      }
+
+      // Cleanup
+      context.destroy();
+      log('Context destroyed', true);
+
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      
+      // Add note about secure context if tests failed
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost). ';
+        note.textContent += 'Run these tests using: python -m http.server 8080 then visit http://localhost:8080/';
+        results.appendChild(note);
+      }
+      
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
