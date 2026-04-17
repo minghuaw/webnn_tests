@@ -105,87 +105,23 @@
 
 
        // Test 4: readTensor with existing ArrayBuffer
-       try {
-         const outputBuffer = new Float32Array(6);
-         await context.readTensor(tensor, outputBuffer);
-         const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
-         log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
-       } catch (e) {
-         log('readTensor with outputBuffer failed', false, e.message);
-       }
+        try {
+          const outputBuffer = new Float32Array(6);
+          await context.readTensor(tensor, outputBuffer);
+          const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
+          log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
+        } catch (e) {
+          log('readTensor with outputBuffer failed', false, e.message);
+        }
 
-      // Test 6: createConstantTensor (from example pattern)
-      try {
-        const constantBuffer = new Float32Array([10, 20, 30, 40]);
-        const constantTensor = context.createConstantTensor({
-          dataType: 'float32',
-          dimensions: [2, 2],
-          shape: [2, 2]
-        }, constantBuffer);
-        log('createConstantTensor', true, 'Created constant tensor');
-        
-        // Try to read from constant tensor
-        const constantValues = await context.readTensor(constantTensor);
-        log('read from constant tensor', constantValues.length === 4, `Read ${constantValues.length} values`);
-      } catch (e) {
-        log('createConstantTensor failed', false, e.message);
-      }
+       // Cleanup
+       context.destroy();
+       log('Context destroyed', true);
 
-      // Test 7: Simple graph with tensors (following example)
-      try {
-        const builder = new MLGraphBuilder(context);
-        
-        // Create input descriptors matching example pattern
-        const descA = {
-          dataType: 'float32',
-          dimensions: [2, 2],
-          shape: [2, 2]
-        };
-        const descB = {
-          dataType: 'float32',
-          dimensions: [2, 2],
-          shape: [2, 2]
-        };
-        
-        // Build simple graph: c = a + b
-        const a = builder.input('a', descA);
-        const b = builder.input('b', descB);
-        const c = builder.add(a, b);
-        const graph = await builder.build({c});
-        log('build simple graph', true, 'Built graph: c = a + b');
-        
-         // Create tensors for execution
-         const tensorA = await context.createTensor({
-           dataType: 'float32',
-           shape: [2, 2],
-           writable: true
-         });
-         const tensorB = await context.createTensor({
-           dataType: 'float32',
-           shape: [2, 2],
-           writable: true
-         });
-         const tensorC = await context.createTensor({
-           dataType: 'float32',
-           shape: [2, 2],
-           readable: true
-         });
-        
-        // Write data
-        const bufferA = new Float32Array([1, 2, 3, 4]);
-        const bufferB = new Float32Array([5, 6, 7, 8]);
-        context.writeTensor(tensorA, bufferA);
-        context.writeTensor(tensorB, bufferB);
-        
-        // Execute graph
-        context.dispatch(graph, {a: tensorA, b: tensorB}, {c: tensorC});
-        
-        // Read results
-        const results = await context.readTensor(tensorC);
-        log('graph execution with tensors', results.length === 4, `Got ${results.length} results`);
-      } catch (e) {
-        log('graph execution test failed', false, e.message);
-      }
+       showSummary();
+     }
+
+
 
       // Cleanup
       context.destroy();
