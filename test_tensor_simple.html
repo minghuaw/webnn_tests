@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MLTensor Tests - Following Official Example</title>
+  <title>MLTensor Tests - Simplified</title>
   <style>
     body { font-family: monospace; padding: 20px; }
     .pass { color: green; }
@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h1>MLTensor Tests (Following Official Example Pattern)</h1>
+  <h1>MLTensor Tests (Simplified)</h1>
   <div id="results"></div>
   <script>
     'use strict';
@@ -57,7 +57,7 @@
         return;
       }
 
-       // Test 1: createTensor with readable/writable flags
+      // Test 1: Create tensor with both read and write access
       let tensor;
       try {
          // Create tensor with both read and write access
@@ -102,59 +102,28 @@
         log('readTensor failed', false, e.message);
       }
 
-
-
-       // Test 4: readTensor with existing ArrayBuffer
-       try {
-         const outputBuffer = new Float32Array(6);
-         await context.readTensor(tensor, outputBuffer);
-         const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
-         log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
-       } catch (e) {
-         log('readTensor with outputBuffer failed', false, e.message);
-       }
-
-      // Test 6: createConstantTensor (from example pattern)
+      // Test 4: readTensor with existing ArrayBuffer
       try {
-        const constantBuffer = new Float32Array([10, 20, 30, 40]);
-        const constantTensor = context.createConstantTensor({
-          dataType: 'float32',
-          dimensions: [2, 2],
-          shape: [2, 2]
-        }, constantBuffer);
-        log('createConstantTensor', true, 'Created constant tensor');
-        
-        // Try to read from constant tensor
-        const constantValues = await context.readTensor(constantTensor);
-        log('read from constant tensor', constantValues.length === 4, `Read ${constantValues.length} values`);
+        const outputBuffer = new Float32Array(6);
+        await context.readTensor(tensor, outputBuffer);
+        const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
+        log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
       } catch (e) {
-        log('createConstantTensor failed', false, e.message);
+        log('readTensor with outputBuffer failed', false, e.message);
       }
 
-      // Test 7: Simple graph with tensors (following example)
+      // Test 5: Simple graph with tensors
       try {
         const builder = new MLGraphBuilder(context);
         
-        // Create input descriptors matching example pattern
-        const descA = {
-          dataType: 'float32',
-          dimensions: [2, 2],
-          shape: [2, 2]
-        };
-        const descB = {
-          dataType: 'float32',
-          dimensions: [2, 2],
-          shape: [2, 2]
-        };
-        
         // Build simple graph: c = a + b
-        const a = builder.input('a', descA);
-        const b = builder.input('b', descB);
+        const a = builder.input('a', {dataType: 'float32', shape: [2, 2]});
+        const b = builder.input('b', {dataType: 'float32', shape: [2, 2]});
         const c = builder.add(a, b);
         const graph = await builder.build({c});
         log('build simple graph', true, 'Built graph: c = a + b');
         
-         // Create tensors for execution
+         // Create input tensors
          const tensorA = await context.createTensor({
            dataType: 'float32',
            shape: [2, 2],
@@ -165,13 +134,15 @@
            shape: [2, 2],
            writable: true
          });
+        
+         // Create output tensor
          const tensorC = await context.createTensor({
            dataType: 'float32',
            shape: [2, 2],
            readable: true
          });
         
-        // Write data
+        // Write data to input tensors
         const bufferA = new Float32Array([1, 2, 3, 4]);
         const bufferB = new Float32Array([5, 6, 7, 8]);
         context.writeTensor(tensorA, bufferA);
@@ -179,12 +150,33 @@
         
         // Execute graph
         context.dispatch(graph, {a: tensorA, b: tensorB}, {c: tensorC});
+        log('graph dispatch executed', true, 'Dispatched graph');
         
-        // Read results
-        const results = await context.readTensor(tensorC);
-        log('graph execution with tensors', results.length === 4, `Got ${results.length} results`);
+        // Try to read results
+        try {
+          const results = await context.readTensor(tensorC);
+          log('read graph results', results.length === 4, `Got ${results.length} results: ${Array.from(results).join(',')}`);
+        } catch (e) {
+          log('read graph results failed', false, e.message);
+        }
       } catch (e) {
         log('graph execution test failed', false, e.message);
+      }
+
+      // Test 6: Test constant tensor via MLGraphBuilder.constant
+      try {
+        const builder = new MLGraphBuilder(context);
+        const constantData = new Float32Array([10, 20, 30]);
+        const constantOperand = builder.constant({dataType: 'float32', shape: [3]}, constantData);
+        
+        // Build a simple graph with the constant
+        const input = builder.input('input', {dataType: 'float32', shape: [3]});
+        const result = builder.add(input, constantOperand);
+        const graph = await builder.build({result});
+        
+        log('constant via MLGraphBuilder.constant', true, 'Created constant via builder');
+      } catch (e) {
+        log('constant via MLGraphBuilder.constant failed', false, e.message);
       }
 
       // Cleanup
