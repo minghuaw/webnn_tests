@@ -57,56 +57,54 @@
         return;
       }
 
-       // Test 1: createTensor with readable/writable flags
-      let tensor;
-      try {
-         // Create tensor with both read and write access
-         const desc = {
-           dataType: 'float32',
-           shape: [2, 3],
-           writable: true,
-           readable: true
-         };
-        
+        // Test 1: createTensor with readable/writable flags
+       let tensor;
+       const originalBuffer = new Float32Array([1, 2, 3, 4, 5, 6]);
+       try {
+          // Create tensor with both read and write access
+          const desc = {
+            dataType: 'float32',
+            shape: [2, 3],
+            writable: true,
+            readable: true
+          };
+         
         tensor = await context.createTensor(desc);
         log('createTensor (basic)', true, `Created tensor with shape [${tensor.shape}]`);
-      } catch (e) {
+       } catch (e) {
         log('createTensor (basic) failed', false, e.message);
         context.destroy();
         showSummary();
         return;
-      }
+       }
 
-      // Test 2: writeTensor
-      try {
-        const buffer = new Float32Array([1, 2, 3, 4, 5, 6]);
-        context.writeTensor(tensor, buffer);
-        log('writeTensor', true, 'Wrote 6 float32 values');
-      } catch (e) {
-        log('writeTensor failed', false, e.message);
-        context.destroy();
-        showSummary();
-        return;
-      }
+       // Test 2: writeTensor
+       try {
+         context.writeTensor(tensor, originalBuffer);
+         log('writeTensor', true, `Wrote ${originalBuffer.length} float32 values: [${Array.from(originalBuffer).join(', ')}]`);
+       } catch (e) {
+         log('writeTensor failed', false, e.message);
+         context.destroy();
+         showSummary();
+         return;
+       }
 
-       // Test 3: readTensor with existing ArrayBuffer - compare entire content
-        try {
-          const outputBuffer = new Float32Array(6);
-          await context.readTensor(tensor, outputBuffer);
-          // Original values written: [1, 2, 3, 4, 5, 6]
-          const expected = new Float32Array([1, 2, 3, 4, 5, 6]);
-          let allMatch = true;
-          for (let i = 0; i < expected.length; i++) {
-            if (outputBuffer[i] !== expected[i]) {
-              allMatch = false;
-              break;
-            }
-          }
-          const ok = allMatch;
-          log('readTensor with outputBuffer', ok, `Buffer: [${Array.from(outputBuffer).join(', ')}]`);
-        } catch (e) {
-          log('readTensor with outputBuffer failed', false, e.message);
-        }
+        // Test 3: readTensor with existing ArrayBuffer - compare entire content
+         try {
+           const outputBuffer = new Float32Array(originalBuffer.length);
+           await context.readTensor(tensor, outputBuffer);
+           let allMatch = true;
+           for (let i = 0; i < originalBuffer.length; i++) {
+             if (outputBuffer[i] !== originalBuffer[i]) {
+               allMatch = false;
+               break;
+             }
+           }
+           const ok = allMatch;
+           log('readTensor with outputBuffer', ok, `Read: [${Array.from(outputBuffer).join(', ')}], Expected: [${Array.from(originalBuffer).join(', ')}]`);
+         } catch (e) {
+           log('readTensor with outputBuffer failed', false, e.message);
+         }
 
       // Cleanup
       context.destroy();
