@@ -89,15 +89,24 @@
         return;
       }
 
-      // Test 3: readTensor with existing ArrayBuffer
-       try {
-         const outputBuffer = new Float32Array(6);
-         await context.readTensor(tensor, outputBuffer);
-         const ok = outputBuffer[0] === 1 && outputBuffer[5] === 6;
-         log('readTensor with outputBuffer', ok, `Buffer: [${outputBuffer[0]},...,${outputBuffer[5]}]`);
-       } catch (e) {
-         log('readTensor with outputBuffer failed', false, e.message);
-       }
+       // Test 3: readTensor with existing ArrayBuffer - compare entire content
+        try {
+          const outputBuffer = new Float32Array(6);
+          await context.readTensor(tensor, outputBuffer);
+          // Original values written: [1, 2, 3, 4, 5, 6]
+          const expected = new Float32Array([1, 2, 3, 4, 5, 6]);
+          let allMatch = true;
+          for (let i = 0; i < expected.length; i++) {
+            if (outputBuffer[i] !== expected[i]) {
+              allMatch = false;
+              break;
+            }
+          }
+          const ok = allMatch;
+          log('readTensor with outputBuffer', ok, `Buffer: [${Array.from(outputBuffer).join(', ')}]`);
+        } catch (e) {
+          log('readTensor with outputBuffer failed', false, e.message);
+        }
 
       // Cleanup
       context.destroy();
