@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch Test – Cosine Operation</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch Test – Cosine Operation</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      // Check if WebNN API is available
+      if (!navigator.ml) {
+        log('WebNN API not available', false, 'navigator.ml is undefined');
+        showSummary();
+        return;
+      }
+      log('WebNN API available', true);
+
+      // Check secure context (WebNN requires HTTPS or localhost)
+      if (!window.isSecureContext) {
+        log('Not in secure context', false, 'WebNN requires HTTPS or localhost. File:// URLs will not work.');
+        showSummary();
+        return;
+      }
+      log('Secure context OK', true);
+
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+        log('Context created', true, 'default options');
+      } catch (e) {
+        log('Failed to create context', false, e.message);
+        showSummary();
+        return;
+      }
+
+      // Test 1: Build graph with cosine operation
+      let graph;
+      try {
+        const builder = new MLGraphBuilder(context);
+        const input = builder.input('input', { dataType: 'float32', shape: [3] });
+        const output = builder.cos(input);
+        graph = await builder.build({ 'output': output });
+        log('Graph built', true, 'cosine operator');
+      } catch (e) {
+        log('Graph build failed', false, e.message);
+        context.destroy();
+        showSummary();
+        return;
+      }
+
+      // Test 2: Create input and output tensors
+      let inputTensor, outputTensor;
+      try {
+        inputTensor = await context.createTensor({
+          dataType: 'float32',
+          shape: [3],
+          writable: true,
+          readable: false
+        });
+        outputTensor = await context.createTensor({
+          dataType: 'float32',
+          shape: [3],
+          writable: false,
+          readable: true
+        });
+        log('Tensors created', true, 'input (writable), output (readable)');
+      } catch (e) {
+        log('Tensor creation failed', false, e.message);
+        context.destroy();
+        showSummary();
+        return;
+      }
+
+      // Test 3: Write input data
+      try {
+        const inputValues = new Float32Array([0, Math.PI / 2, Math.PI]);
+        context.writeTensor(inputTensor, inputValues);
+        log('Input data written', true, `[${Array.from(inputValues).map(v => v.toFixed(4)).join(', ')}]`);
+      } catch (e) {
+        log('Input write failed', false, e.message);
+        context.destroy();
+        showSummary();
+        return;
+      }
+
+      // Test 4: Dispatch graph
+      try {
+        context.dispatch(graph, { 'input': inputTensor }, { 'output': outputTensor });
+        log('Graph dispatched', true, 'execution scheduled');
+      } catch (e) {
+        log('Dispatch failed', false, e.message);
+        context.destroy();
+        showSummary();
+        return;
+      }
+
+      // Test 5: Read output and verify cosine computation
+      try {
+        const resultBuffer = await context.readTensor(outputTensor);
+        const results = new Float32Array(resultBuffer);
+        const expected = new Float32Array([1, 0, -1]);
+        const tolerance = 1e-5;
+        
+        let allMatch = true;
+        for (let i = 0; i < expected.length; i++) {
+          if (Math.abs(results[i] - expected[i]) > tolerance) {
+            allMatch = false;
+            break;
+          }
+        }
+        
+        const ok = allMatch;
+        const resultStr = `Got: [${Array.from(results).map(v => v.toFixed(4)).join(', ')}], Expected: [${Array.from(expected).map(v => v.toFixed(4)).join(', ')}]`;
+        log('Cosine computation', ok, resultStr);
+      } catch (e) {
+        log('Output read failed', false, e.message);
+      }
+
+      // Cleanup
+      context.destroy();
+      log('Context destroyed', true);
+
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      
+      // Add note about secure context if tests failed
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost). ';
+        note.textContent += 'Run these tests using: python -m http.server 8080 then visit http://localhost:8080/';
+        results.appendChild(note);
+      }
+      
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
