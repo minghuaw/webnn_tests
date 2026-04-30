@@ -452,6 +452,1071 @@
         console.error(e);
       }
 
+      // =============================================
+      // Additional logical operations
+      // =============================================
+
+      // Test: build graph with chain: input -> logicalNot (uint8)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'uint8', shape: [2, 3] });
+        const result = builder.logicalNot(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> logicalNot (uint8)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> logicalNot (uint8)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> isNaN
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.isNaN(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> isNaN', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> isNaN', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> isInfinite
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.isInfinite(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> isInfinite', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> isInfinite', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Additional unary activation operations
+      // =============================================
+
+      // Test: build graph with chain: input -> elu (default alpha)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.elu(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> elu (default alpha)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> elu (default alpha)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> elu (alpha=0.5)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.elu(a, { alpha: 0.5 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> elu (alpha=0.5)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> elu (alpha=0.5)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gelu
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.gelu(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gelu', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gelu', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> hardSigmoid (default alpha/beta)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.hardSigmoid(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> hardSigmoid (default alpha/beta)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> hardSigmoid (default alpha/beta)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> hardSigmoid (alpha=0.3, beta=0.4)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.hardSigmoid(a, { alpha: 0.3, beta: 0.4 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> hardSigmoid (alpha=0.3, beta=0.4)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> hardSigmoid (alpha=0.3, beta=0.4)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> hardSwish
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.hardSwish(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> hardSwish', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> hardSwish', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> leakyRelu (default alpha)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.leakyRelu(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> leakyRelu (default alpha)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> leakyRelu (default alpha)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> leakyRelu (alpha=0.5)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.leakyRelu(a, { alpha: 0.5 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> leakyRelu (alpha=0.5)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> leakyRelu (alpha=0.5)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> linear (default alpha/beta)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.linear(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> linear (default alpha/beta)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> linear (default alpha/beta)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> linear (alpha=2.0, beta=1.0)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.linear(a, { alpha: 2.0, beta: 1.0 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> linear (alpha=2.0, beta=1.0)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> linear (alpha=2.0, beta=1.0)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> relu
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.relu(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> relu', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> relu', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> sigmoid
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.sigmoid(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> sigmoid', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> sigmoid', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> softmax
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.softmax(a, 1);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> softmax', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> softmax', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> softplus (default steepness)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.softplus(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> softplus (default steepness)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> softplus (default steepness)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> softplus (steepness=2.0)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.softplus(a, { steepness: 2.0 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> softplus (steepness=2.0)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> softplus (steepness=2.0)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> softsign
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.softsign(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> softsign', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> softsign', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> tanh
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.tanh(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> tanh', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> tanh', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Additional binary and ternary operations
+      // =============================================
+
+      // Test: build graph with chain: input -> matmul
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [3, 2] });
+        const result = builder.matmul(a, b);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> matmul', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> matmul', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gemm (default options)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [3, 4] });
+        const result = builder.gemm(a, b);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gemm (default options)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gemm (default options)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gemm (alpha=0.5, bTranspose=true)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [4, 3] });
+        const result = builder.gemm(a, b, { alpha: 0.5, bTranspose: true });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gemm (alpha=0.5, bTranspose=true)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gemm (alpha=0.5, bTranspose=true)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> prelu
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const slope = builder.input('slope', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.prelu(a, slope);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> prelu', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> prelu', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> where
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const condition = builder.input('condition', { dataType: 'uint8', shape: [2, 3] });
+        const x = builder.input('x', { dataType: 'float32', shape: [2, 3] });
+        const y = builder.input('y', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.where(condition, x, y);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> where', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> where', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Reduction operations
+      // =============================================
+
+      // Test: build graph with chain: input -> reduceL1
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceL1(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceL1', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceL1', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceL2
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceL2(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceL2', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceL2', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceLogSum
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceLogSum(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceLogSum', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceLogSum', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceLogSumExp
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceLogSumExp(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceLogSumExp', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceLogSumExp', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceMax
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceMax(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceMax', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceMax', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceMean (default options)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceMean(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceMean (default options)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceMean (default options)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceMean (keepDimensions=true)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceMean(a, { keepDimensions: true });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceMean (keepDimensions=true)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceMean (keepDimensions=true)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceMin
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceMin(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceMin', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceMin', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceProduct
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceProduct(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceProduct', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceProduct', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceSum
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceSum(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceSum', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceSum', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reduceSumSquare
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reduceSumSquare(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reduceSumSquare', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reduceSumSquare', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // ArgMin / ArgMax
+      // =============================================
+
+      // Test: build graph with chain: input -> argMin
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.argMin(a, 1);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> argMin', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> argMin', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> argMax
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.argMax(a, 1);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> argMax', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> argMax', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Other tensor operations
+      // =============================================
+
+      // Test: build graph with chain: input -> cast
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.cast(a, 'int32');
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> cast', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> cast', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> clamp (default options)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.clamp(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> clamp (default options)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> clamp (default options)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> clamp (minValue=0, maxValue=1)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.clamp(a, { minValue: 0, maxValue: 1 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> clamp (minValue=0, maxValue=1)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> clamp (minValue=0, maxValue=1)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> concat
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const b = builder.input('b', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.concat([a, b], 0);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> concat', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> concat', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> expand
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.expand(a, [2, 3]);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> expand', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> expand', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gather (default axis)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const indices = builder.input('indices', { dataType: 'int32', shape: [2] });
+        const result = builder.gather(a, indices);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gather (default axis)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gather (default axis)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gather (axis=1)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const indices = builder.input('indices', { dataType: 'int32', shape: [1] });
+        const result = builder.gather(a, indices, { axis: 1 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gather (axis=1)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gather (axis=1)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gatherElements
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const indices = builder.constant({ dataType: 'int32', shape: [2, 3] }, new Int32Array([0, 0, 0, 1, 1, 1]));
+        const result = builder.gatherElements(a, indices);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gatherElements', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gatherElements', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> gatherND
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const indices = builder.input('indices', { dataType: 'int32', shape: [2, 2] });
+        const result = builder.gatherND(a, indices);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> gatherND', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> gatherND', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reshape
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reshape(a, [6]);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reshape', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reshape', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> reverse
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.reverse(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> reverse', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> reverse', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> slice
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.slice(a, [0, 0], [2, 3]);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> slice', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> slice', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> split
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [4, 3] });
+        const results = builder.split(a, 2, { axis: 0 });
+        const graph = await builder.build({ output: results[0] });
+        log('build graph with chain: input -> split', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> split', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> tile
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.tile(a, [1, 1]);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> tile', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> tile', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> transpose
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.transpose(a, { permutation: [1, 0] });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> transpose', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> transpose', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> triangular (default upper)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.triangular(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> triangular (default upper)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> triangular (default upper)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> triangular (upper=false)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [3, 3] });
+        const result = builder.triangular(a, { upper: false });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> triangular (upper=false)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> triangular (upper=false)', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Normalization operations
+      // =============================================
+
+      // Test: build graph with chain: input -> batchNormalization (default epsilon)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const mean = builder.input('mean', { dataType: 'float32', shape: [3] });
+        const variance = builder.input('variance', { dataType: 'float32', shape: [3] });
+        const result = builder.batchNormalization(a, mean, variance);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> batchNormalization (default epsilon)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> batchNormalization (default epsilon)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> batchNormalization (epsilon=0.001)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const mean = builder.input('mean', { dataType: 'float32', shape: [3] });
+        const variance = builder.input('variance', { dataType: 'float32', shape: [3] });
+        const result = builder.batchNormalization(a, mean, variance, { epsilon: 0.001 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> batchNormalization (epsilon=0.001)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> batchNormalization (epsilon=0.001)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> instanceNormalization (default epsilon)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [1, 2, 3, 3] });
+        const result = builder.instanceNormalization(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> instanceNormalization (default epsilon)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> instanceNormalization (default epsilon)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> instanceNormalization (epsilon=0.001)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [1, 2, 3, 3] });
+        const result = builder.instanceNormalization(a, { epsilon: 0.001 });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> instanceNormalization (epsilon=0.001)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> instanceNormalization (epsilon=0.001)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> layerNormalization
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.layerNormalization(a);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> layerNormalization', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> layerNormalization', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Pad, CumulativeSum, Quantize/Dequantize
+      // =============================================
+
+      // Test: build graph with chain: input -> pad (constant mode)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.pad(a, [0, 0], [0, 0]);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> pad (constant mode)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> pad (constant mode)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> pad (reflection mode)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.pad(a, [1, 1], [1, 1], { mode: 'reflection' });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> pad (reflection mode)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> pad (reflection mode)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> cumulativeSum (default options)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.cumulativeSum(a, 1);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> cumulativeSum (default options)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> cumulativeSum (default options)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> cumulativeSum (exclusive=true)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const result = builder.cumulativeSum(a, 1, { exclusive: true });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> cumulativeSum (exclusive=true)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> cumulativeSum (exclusive=true)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> dequantizeLinear
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'uint8', shape: [2, 3] });
+        const scale = builder.input('scale', { dataType: 'float32', shape: [1, 1] });
+        const zeroPoint = builder.input('zeroPoint', { dataType: 'uint8', shape: [1, 1] });
+        const result = builder.dequantizeLinear(a, scale, zeroPoint);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> dequantizeLinear', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> dequantizeLinear', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> quantizeLinear
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
+        const scale = builder.input('scale', { dataType: 'float32', shape: [1, 1] });
+        const zeroPoint = builder.input('zeroPoint', { dataType: 'int32', shape: [1, 1] });
+        const result = builder.quantizeLinear(a, scale, zeroPoint);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> quantizeLinear', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> quantizeLinear', false);
+        console.error(e);
+      }
+
+      // =============================================
+      // Pooling and convolution operations
+      // =============================================
+
+      // Test: build graph with chain: input -> averagePool2d (window 2x2)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [1, 1, 4, 4] });
+        const result = builder.averagePool2d(a, { windowDimensions: [2, 2] });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> averagePool2d (window 2x2)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> averagePool2d (window 2x2)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> averagePool2d (strides 2x2)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [1, 1, 4, 4] });
+        const result = builder.averagePool2d(a, { windowDimensions: [2, 2], strides: [2, 2] });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> averagePool2d (strides 2x2)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> averagePool2d (strides 2x2)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> maxPool2d
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [1, 1, 4, 4] });
+        const result = builder.maxPool2d(a, { windowDimensions: [2, 2] });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> maxPool2d', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> maxPool2d', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> conv2d (default options)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const input = builder.input('input', { dataType: 'float32', shape: [1, 1, 4, 4] });
+        const filter = builder.input('filter', { dataType: 'float32', shape: [1, 1, 2, 2] });
+        const result = builder.conv2d(input, filter);
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> conv2d (default options)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> conv2d (default options)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> conv2d (strides 2x2)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const input = builder.input('input', { dataType: 'float32', shape: [1, 1, 8, 8] });
+        const filter = builder.input('filter', { dataType: 'float32', shape: [1, 1, 2, 2] });
+        const result = builder.conv2d(input, filter, { strides: [2, 2] });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> conv2d (strides 2x2)', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> conv2d (strides 2x2)', false);
+        console.error(e);
+      }
+
+      // Test: build graph with chain: input -> resample2d
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [1, 1, 4, 4] });
+        const result = builder.resample2d(a, { scales: [1, 1] });
+        const graph = await builder.build({ output: result });
+        log('build graph with chain: input -> resample2d', graph instanceof MLGraph);
+        context.destroy();
+      } catch (e) {
+        log('build graph with chain: input -> resample2d', false);
+        console.error(e);
+      }
+
       // Summary
       const summary = document.createElement('div');
       summary.style.marginTop = '20px';
