@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – Element‑wise Operators</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – Element‑wise Operators</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    function arraysMatch(actual, expected, tolerance) {
+      if (actual.length !== expected.length) return false;
+      for (let i = 0; i < actual.length; i++) {
+        if (tolerance === 0) {
+          if (actual[i] !== expected[i]) return false;
+        } else {
+          if (Math.abs(actual[i] - expected[i]) > tolerance) return false;
+        }
+      }
+      return true;
+    }
+
+    // ---------- generic test runner ----------
+
+    async function runFloat32Test(context, builder, inputDesc, inputValues, buildFn, expectedValues, tolerance, opName, refUrl) {
+      try {
+        const input = builder.input('input', inputDesc);
+        const output = buildFn(builder, input);
+        const graph = await builder.build({ output });
+        const iTensor = await context.createTensor({ dataType: 'float32', shape: inputDesc.shape, writable: true, readable: false });
+        const oTensor = await context.createTensor({ dataType: 'float32', shape: output.shape, writable: false, readable: true });
+        context.writeTensor(iTensor, inputValues);
+        context.dispatch(graph, { input: iTensor }, { output: oTensor });
+        const buf = await context.readTensor(oTensor);
+        const results = new Float32Array(buf);
+        const ok = arraysMatch(results, expectedValues, tolerance);
+        const s = `Got: [${Array.from(results).map(v => v.toFixed(4)).join(', ')}]`;
+        if (ok) { log(opName, true, s); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expectedValues).map(v => v.toFixed(4)).join(', ')}]`);
+        }
+        graph.destroy(); iTensor.destroy(); oTensor.destroy();
+      } catch (e) { log(opName, false, e.message); }
+    }
+
+    async function runFloat32Binary(context, builder, dA, dB, aV, bV, buildFn, expected, tolerance, opName, refUrl) {
+      try {
+        const a = builder.input('a', dA); const b = builder.input('b', dB);
+        const output = buildFn(builder, a, b);
+        const graph = await builder.build({ output });
+        const tA = await context.createTensor({ dataType: 'float32', shape: dA.shape, writable: true, readable: false });
+        const tB = await context.createTensor({ dataType: 'float32', shape: dB.shape, writable: true, readable: false });
+        const tO = await context.createTensor({ dataType: 'float32', shape: output.shape, writable: false, readable: true });
+        context.writeTensor(tA, aV); context.writeTensor(tB, bV);
+        context.dispatch(graph, { a: tA, b: tB }, { output: tO });
+        const buf = await context.readTensor(tO);
+        const results = new Float32Array(buf);
+        const ok = arraysMatch(results, expected, tolerance);
+        const s = `Got: [${Array.from(results).map(v => v.toFixed(4)).join(', ')}]`;
+        if (ok) { log(opName, true, s); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expected).map(v => v.toFixed(4)).join(', ')}]`);
+        }
+        graph.destroy(); tA.destroy(); tB.destroy(); tO.destroy();
+      } catch (e) { log(opName, false, e.message); }
+    }
+
+    async function runUint8Unary(context, builder, inputDesc, inputValues, buildFn, expectedValues, opName, refUrl) {
+      try {
+        const input = builder.input('input', inputDesc);
+        const output = buildFn(builder, input);
+        const graph = await builder.build({ output });
+        const iTensor = await context.createTensor({ dataType: 'uint8', shape: inputDesc.shape, writable: true, readable: false });
+        const oTensor = await context.createTensor({ dataType: 'uint8', shape: output.shape, writable: false, readable: true });
+        context.writeTensor(iTensor, inputValues);
+        context.dispatch(graph, { input: iTensor }, { output: oTensor });
+        const buf = await context.readTensor(oTensor);
+        const results = new Uint8Array(buf);
+        const ok = arraysMatch(results, expectedValues, 0);
+        const s = `Got: [${Array.from(results).join(', ')}]`;
+        if (ok) { log(opName, true, s); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expectedValues).join(', ')}]`);
+        }
+        graph.destroy(); iTensor.destroy(); oTensor.destroy();
+      } catch (e) { log(opName, false, e.message); }
+    }
+
+    async function runCompUint8(context, builder, dA, dB, aV, bV, buildFn, expected, opName, refUrl) {
+      try {
+        const a = builder.input('a', dA); const b = builder.input('b', dB);
+        const output = buildFn(builder, a, b);
+        const graph = await builder.build({ output });
+        const tA = await context.createTensor({ dataType: dA.dataType, shape: dA.shape, writable: true, readable: false });
+        const tB = await context.createTensor({ dataType: dB.dataType, shape: dB.shape, writable: true, readable: false });
+        const tO = await context.createTensor({ dataType: 'uint8', shape: output.shape, writable: false, readable: true });
+        context.writeTensor(tA, aV); context.writeTensor(tB, bV);
+        context.dispatch(graph, { a: tA, b: tB }, { output: tO });
+        const buf = await context.readTensor(tO);
+        const results = new Uint8Array(buf);
+        const ok = arraysMatch(results, expected, 0);
+        const s = `Got: [${Array.from(results).join(', ')}]`;
+        if (ok) { log(opName, true, s); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expected).join(', ')}]`);
+        }
+        graph.destroy(); tA.destroy(); tB.destroy(); tO.destroy();
+      } catch (e) { log(opName, false, e.message); }
+    }
+
+    // ---------- reference implementations ----------
+
+    function erfApprox(x) {
+      const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+      const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+      const sign = x < 0 ? -1 : 1; x = Math.abs(x);
+      const t = 1 / (1 + p * x);
+      return sign * (1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x)));
+    }
+
+    // ----- execution -----
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false, 'navigator.ml undefined'); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+      let context;
+      try { context = await navigator.ml.createContext({}); log('Context created', true); }
+      catch (e) { log('Context failed', false, e.message); showSummary(); return; }
+
+      // ===============================
+      // 1.  ELEMENT-WISE UNARY  (15)
+      // ===============================
+
+      // 1  abs
+      // https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [5] }, new Float32Array([-3, -1, 0, 1, 3]),
+        (b, x) => b.abs(x), new Float32Array([3, 1, 0, 1, 3]), 1e-5,
+        'abs', 'https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py');
+
+      // 2  ceil
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [4] }, new Float32Array([-1.5, -0.5, 0.5, 1.5]),
+        (b, x) => b.ceil(x), new Float32Array([-1, 0, 1, 2]), 1e-5,
+        'ceil', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc');
+
+      // 3  cos
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0, Math.PI / 4, Math.PI / 2, Math.PI, 3 * Math.PI / 4, 2 * Math.PI]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [6] }, inp,
+          (b, x) => b.cos(x), new Float32Array(inp.map(Math.cos)), 1e-4,
+          'cos', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 4  erf
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc
+      {
+        const inp = new Float32Array([-3, -1, 0, 1, 3]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [5] }, inp,
+          (b, x) => b.erf(x), new Float32Array(inp.map(erfApprox)), 1e-4,
+          'erf', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc');
+      }
+
+      // 5  exp
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0, 0.5, -0.5, 5]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [4] }, inp,
+          (b, x) => b.exp(x), new Float32Array(inp.map(Math.exp)), 1e-4,
+          'exp', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 6  floor
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [4] }, new Float32Array([-1.5, -0.5, 0.5, 1.5]),
+        (b, x) => b.floor(x), new Float32Array([-2, -1, 0, 1]), 1e-5,
+        'floor', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc');
+
+      // 7  identity
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/array_ops_test.py
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [4] }, new Float32Array([1, 2, 3, 4]),
+        (b, x) => b.identity(x), new Float32Array([1, 2, 3, 4]), 1e-5,
+        'identity', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/array_ops_test.py');
+
+      // 8  log
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0.1, 0.5, 1, 10]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [4] }, inp,
+          (b, x) => b.log(x), new Float32Array(inp.map(Math.log)), 1e-4,
+          'log', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 9  neg
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [5] }, new Float32Array([-3, -1, 0, 1, 3]),
+        (b, x) => b.neg(x), new Float32Array([3, 1, 0, -1, -3]), 1e-5,
+        'neg', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc');
+
+      // 10  reciprocal
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0.5, 1, 2, 4]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [4] }, inp,
+          (b, x) => b.reciprocal(x), new Float32Array(inp.map(v => 1 / v)), 1e-4,
+          'reciprocal', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 11  roundEven (banker's rounding)
+      // https://en.wikipedia.org/wiki/Rounding#Round_half_to_even
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [5] }, new Float32Array([-1.5, -0.5, 0.5, 1.5, 2.5]),
+        (b, x) => b.roundEven(x), new Float32Array([-2, 0, 0, 2, 2]), 1e-5,
+        'roundEven', 'https://en.wikipedia.org/wiki/Rounding#Round_half_to_even');
+
+      // 12  sin
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0, Math.PI / 4, Math.PI / 2, Math.PI, 3 * Math.PI / 4, 2 * Math.PI]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [6] }, inp,
+          (b, x) => b.sin(x), new Float32Array(inp.map(Math.sin)), 1e-4,
+          'sin', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 13  sign
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc
+      await runFloat32Test(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [5] }, new Float32Array([-3, -1, 0, 1, 3]),
+        (b, x) => b.sign(x), new Float32Array([-1, -1, 0, 1, 1]), 1e-5,
+        'sign', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_unary_test.cc');
+
+      // 14  sqrt
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0, 1, 4, 9]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [4] }, inp,
+          (b, x) => b.sqrt(x), new Float32Array(inp.map(Math.sqrt)), 1e-4,
+          'sqrt', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 15  tan
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const inp = new Float32Array([0, Math.PI / 8, Math.PI / 4, Math.PI / 2 - 0.01, Math.PI, 3 * Math.PI / 4]);
+        await runFloat32Test(context, new MLGraphBuilder(context),
+          { dataType: 'float32', shape: [6] }, inp,
+          (b, x) => b.tan(x), new Float32Array(inp.map(Math.tan)), 1e-3,
+          'tan', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // ===============================
+      // 2.  ELEMENT-WISE BINARY  (7)
+      // ===============================
+
+      const bD = { dataType: 'float32', shape: [4] };
+      const bA = new Float32Array([0, 1, -1, 5]);
+      const bB = new Float32Array([1, -1, 2, -5]);
+
+      // 16  add
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      await runFloat32Binary(context, new MLGraphBuilder(context), bD, bD, bA, bB,
+        (b, x, y) => b.add(x, y), new Float32Array(bA.map((v, i) => v + bB[i])), 1e-5,
+        'add', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+
+      // 17  sub
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      await runFloat32Binary(context, new MLGraphBuilder(context), bD, bD, bA, bB,
+        (b, x, y) => b.sub(x, y), new Float32Array(bA.map((v, i) => v - bB[i])), 1e-5,
+        'sub', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+
+      // 18  mul
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      await runFloat32Binary(context, new MLGraphBuilder(context), bD, bD, bA, bB,
+        (b, x, y) => b.mul(x, y), new Float32Array(bA.map((v, i) => v * bB[i])), 1e-5,
+        'mul', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+
+      // 19  div  (avoid division by zero)
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      {
+        const dD = { dataType: 'float32', shape: [4] };
+        const dA = new Float32Array([1, 2, 4, 5]);
+        const dB = new Float32Array([2, 1, 2, 2]);
+        await runFloat32Binary(context, new MLGraphBuilder(context), dD, dD, dA, dB,
+          (b, x, y) => b.div(x, y), new Float32Array(dA.map((v, i) => v / dB[i])), 1e-4,
+          'div', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+      }
+
+      // 20  max
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      await runFloat32Binary(context, new MLGraphBuilder(context), bD, bD, bA, bB,
+        (b, x, y) => b.max(x, y), new Float32Array(bA.map((v, i) => Math.max(v, bB[i]))), 1e-5,
+        'max', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+
+      // 21  min
+      // https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py
+      await runFloat32Binary(context, new MLGraphBuilder(context), bD, bD, bA, bB,
+        (b, x, y) => b.min(x, y), new Float32Array(bA.map((v, i) => Math.min(v, bB[i]))), 1e-5,
+        'min', 'https://github.com/ml-explore/mlx/blob/main/tests/test_ops.py');
+
+      // 22  pow
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const pD = { dataType: 'float32', shape: [3] };
+        const pA = new Float32Array([2, 3, 4]);
+        const pB = new Float32Array([1, 2, 3]);
+        await runFloat32Binary(context, new MLGraphBuilder(context), pD, pD, pA, pB,
+          (b, x, y) => b.pow(x, y), new Float32Array(pA.map((v, i) => Math.pow(v, pB[i]))), 1e-4,
+          'pow', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // ===============================
+      // 3.  ELEMENT-WISE LOGICAL  (12)
+      // ===============================
+
+      // 23  equal
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const eD = { dataType: 'float32', shape: [3] };
+        const eA = new Float32Array([0, 1, 2]);
+        const eB = new Float32Array([0, -1, 2]);
+        await runCompUint8(context, new MLGraphBuilder(context), eD, eD, eA, eB,
+          (b, x, y) => b.equal(x, y), new Uint8Array([1, 0, 1]),
+          'equal', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // 24  notEqual
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const eD = { dataType: 'float32', shape: [3] };
+        const eA = new Float32Array([0, 1, 2]);
+        const eB = new Float32Array([0, -1, 2]);
+        await runCompUint8(context, new MLGraphBuilder(context), eD, eD, eA, eB,
+          (b, x, y) => b.notEqual(x, y), new Uint8Array([0, 1, 0]),
+          'notEqual', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // 25  greater
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const eD = { dataType: 'float32', shape: [3] };
+        const eA = new Float32Array([0, 1, 2]);
+        const eB = new Float32Array([0, -1, 2]);
+        await runCompUint8(context, new MLGraphBuilder(context), eD, eD, eA, eB,
+          (b, x, y) => b.greater(x, y), new Uint8Array([0, 1, 0]),
+          'greater', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // 26  greaterOrEqual
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const eD = { dataType: 'float32', shape: [3] };
+        const eA = new Float32Array([0, 1, 2]);
+        const eB = new Float32Array([0, -1, 2]);
+        await runCompUint8(context, new MLGraphBuilder(context), eD, eD, eA, eB,
+          (b, x, y) => b.greaterOrEqual(x, y), new Uint8Array([1, 1, 1]),
+          'greaterOrEqual', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // 27  lesser
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const eD = { dataType: 'float32', shape: [3] };
+        const eA = new Float32Array([0, 1, 2]);
+        const eB = new Float32Array([0, -1, 2]);
+        await runCompUint8(context, new MLGraphBuilder(context), eD, eD, eA, eB,
+          (b, x, y) => b.lesser(x, y), new Uint8Array([0, 0, 0]),
+          'lesser', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // 28  lesserOrEqual
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      {
+        const eD = { dataType: 'float32', shape: [3] };
+        const eA = new Float32Array([0, 1, 2]);
+        const eB = new Float32Array([0, -1, 2]);
+        await runCompUint8(context, new MLGraphBuilder(context), eD, eD, eA, eB,
+          (b, x, y) => b.lesserOrEqual(x, y), new Uint8Array([1, 0, 1]),
+          'lesserOrEqual', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+      }
+
+      // 29  logicalNot (uint8 → uint8)
+      // https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py
+      await runUint8Unary(context, new MLGraphBuilder(context),
+        { dataType: 'uint8', shape: [4] }, new Uint8Array([0, 1, 2, 255]),
+        (b, x) => b.logicalNot(x), new Uint8Array([1, 0, 0, 0]),
+        'logicalNot', 'https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py');
+
+      // 30  logicalAnd (uint8 × uint8 → uint8)
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_logical_test.cc
+      {
+        const lD = { dataType: 'uint8', shape: [4] };
+        const lA = new Uint8Array([0, 0, 1, 1]);
+        const lB = new Uint8Array([0, 1, 0, 1]);
+        await runCompUint8(context, new MLGraphBuilder(context), lD, lD, lA, lB,
+          (b, x, y) => b.logicalAnd(x, y), new Uint8Array([0, 0, 0, 1]),
+          'logicalAnd', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_logical_test.cc');
+      }
+
+      // 31  logicalOr (uint8 × uint8 → uint8)
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_logical_test.cc
+      {
+        const lD = { dataType: 'uint8', shape: [4] };
+        const lA = new Uint8Array([0, 0, 1, 1]);
+        const lB = new Uint8Array([0, 1, 0, 1]);
+        await runCompUint8(context, new MLGraphBuilder(context), lD, lD, lA, lB,
+          (b, x, y) => b.logicalOr(x, y), new Uint8Array([0, 1, 1, 1]),
+          'logicalOr', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_logical_test.cc');
+      }
+
+      // 32  logicalXor (uint8 × uint8 → uint8)
+      // https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py
+      {
+        const lD = { dataType: 'uint8', shape: [4] };
+        const lA = new Uint8Array([0, 0, 1, 1]);
+        const lB = new Uint8Array([0, 1, 0, 1]);
+        await runCompUint8(context, new MLGraphBuilder(context), lD, lD, lA, lB,
+          (b, x, y) => b.logicalXor(x, y), new Uint8Array([0, 1, 1, 0]),
+          'logicalXor', 'https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py');
+      }
+
+      // 33  isNaN (float32 → uint8)
+      // https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py
+      await runUint8Unary(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [4] }, new Float32Array([0, NaN, 5, Infinity]),
+        (b, x) => b.isNaN(x), new Uint8Array([0, 1, 0, 0]),
+        'isNaN', 'https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py');
+
+      // 34  isInfinite (float32 → uint8)
+      // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      await runUint8Unary(context, new MLGraphBuilder(context),
+        { dataType: 'float32', shape: [4] }, new Float32Array([0, NaN, 5, Infinity]),
+        (b, x) => b.isInfinite(x), new Uint8Array([0, 0, 0, 1]),
+        'isInfinite', 'https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc');
+
+      context.destroy();
+      log('Context destroyed', true);
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost). Run via: python -m http.server 8080 then visit http://localhost:8080/';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

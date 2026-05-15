@@ -350,6 +350,54 @@
         console.error(e);
       }
 
+      // Test: logicalNot operator (uint8 input -> uint8 output)
+      // Reference: https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py (logical_not)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'uint8', shape: [4] });
+        const result = builder.logicalNot(a);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 4;
+        log('logicalNot operator', ok);
+        context.destroy();
+      } catch (e) {
+        log('logicalNot operator', false);
+        console.error(e);
+      }
+
+      // Test: isNaN operator (float32 input -> uint8 output)
+      // Reference: https://github.com/pytorch/pytorch/blob/main/test/test_unary_ufuncs.py (isnan)
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [4] });
+        const result = builder.isNaN(a);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 4;
+        log('isNaN operator', ok);
+        context.destroy();
+      } catch (e) {
+        log('isNaN operator', false);
+        console.error(e);
+      }
+
+      // Test: isInfinite operator (float32 input -> uint8 output)
+      // Reference: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/cwise_ops_test.cc
+      try {
+        const context = await navigator.ml.createContext({});
+        const builder = new MLGraphBuilder(context);
+        const a = builder.input('a', { dataType: 'float32', shape: [4] });
+        const result = builder.isInfinite(a);
+        const ok = result instanceof MLOperand && result.dataType === 'uint8' &&
+                   result.shape[0] === 4;
+        log('isInfinite operator', ok);
+        context.destroy();
+      } catch (e) {
+        log('isInfinite operator', false);
+        console.error(e);
+      }
+
       // Summary
       const summary = document.createElement('div');
       summary.style.marginTop = '20px';

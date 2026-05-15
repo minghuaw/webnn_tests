@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – Reduction Operators</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – Reduction Operators</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    function arraysMatch(actual, expected, tolerance) {
+      if (actual.length !== expected.length) return false;
+      for (let i = 0; i < actual.length; i++) {
+        if (tolerance === 0) { if (actual[i] !== expected[i]) return false; }
+        else { if (Math.abs(actual[i] - expected[i]) > tolerance) return false; }
+      }
+      return true;
+    }
+
+    async function runReduce(context, inputData, inputShape, axes, keepDims, buildFn, expected, tolerance, opName, refUrl) {
+      try {
+        const builder = new MLGraphBuilder(context);
+        const input = builder.input('input', { dataType: 'float32', shape: inputShape });
+        const output = (axes !== null)
+          ? buildFn(builder, input, { axes, keepDimensions: keepDims })
+          : buildFn(builder, input, { keepDimensions: keepDims });
+        const graph = await builder.build({ output });
+        const iTensor = await context.createTensor({ dataType: 'float32', shape: inputShape, writable: true, readable: false });
+        const oTensor = await context.createTensor({ dataType: 'float32', shape: output.shape, writable: false, readable: true });
+        context.writeTensor(iTensor, inputData);
+        context.dispatch(graph, { input: iTensor }, { output: oTensor });
+        const buf = await context.readTensor(oTensor);
+        const results = new Float32Array(buf);
+        const ok = arraysMatch(results, expected, tolerance);
+        const s = `Got: [${Array.from(results).map(v => v.toFixed(4)).join(', ')}]`;
+        if (ok) { log(opName, true, s); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expected).map(v => v.toFixed(4)).join(', ')}]`);
+        }
+        graph.destroy(); iTensor.destroy(); oTensor.destroy();
+      } catch (e) { log(opName, false, e.message); }
+    }
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+      let context;
+      try { context = await navigator.ml.createContext({}); log('Context created', true); }
+      catch (e) { log('Context failed', false, e.message); showSummary(); return; }
+
+      // Input: [1, 2, 3, 4, 5, 6] shaped [2, 3]
+      // Sum: 21, Mean: 3.5, Max: 6, Min: 1, Product: 720
+      // Axis=0: [1+4=5, 2+5=7, 3+6=9]
+      // Axis=1: [1+2+3=6, 4+5+6=15]
+
+      const S = { dataType: 'float32', shape: [2, 3] };
+      const inp = new Float32Array([1, 2, 3, 4, 5, 6]);
+
+      // 1 reduceL1  — sum of absolute values
+      // https://pytorch.org/docs/stable/generated/torch.norm.html
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceL1(x, o),
+        new Float32Array([21]), 1e-4,
+        'reduceL1 (full)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
+      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceL1(x, o),
+        new Float32Array([5, 7, 9]), 1e-4,
+        'reduceL1 (axis=0)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
+      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceL1(x, o),
+        new Float32Array([6, 15]), 1e-4,
+        'reduceL1 (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
+
+      // 2 reduceL2  — sqrt(sum of squares)
+      // https://pytorch.org/docs/stable/generated/torch.norm.html
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceL2(x, o),
+        new Float32Array([Math.sqrt(91)]), 1e-4,
+        'reduceL2 (full)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
+      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceL2(x, o),
+        new Float32Array([Math.sqrt(17), Math.sqrt(29), Math.sqrt(45)]), 1e-4,
+        'reduceL2 (axis=0)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
+
+      // 3 reduceLogSum  — log(sum)
+      // https://pytorch.org/docs/stable/generated/torch.logsumexp.html
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceLogSum(x, o),
+        new Float32Array([Math.log(21)]), 1e-4,
+        'reduceLogSum (full)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
+      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceLogSum(x, o),
+        new Float32Array([Math.log(6), Math.log(15)]), 1e-4,
+        'reduceLogSum (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
+
+      // 4 reduceLogSumExp  — log(sum(exp))
+      // https://pytorch.org/docs/stable/generated/torch.logsumexp.html
+      {
+        function logSumExp(arr) {
+          const mx = Math.max(...arr);
+          return mx + Math.log(arr.reduce((s, v) => s + Math.exp(v - mx), 0));
+        }
+        await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceLogSumExp(x, o),
+          new Float32Array([logSumExp([1, 2, 3, 4, 5, 6])]), 1e-3,
+          'reduceLogSumExp (full)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
+        await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceLogSumExp(x, o),
+          new Float32Array([logSumExp([1, 2, 3]), logSumExp([4, 5, 6])]), 1e-3,
+          'reduceLogSumExp (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
+      }
+
+      // 5 reduceMax
+      // https://www.tensorflow.org/api_docs/python/tf/math/reduce_max
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceMax(x, o),
+        new Float32Array([6]), 1e-5,
+        'reduceMax (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_max');
+      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceMax(x, o),
+        new Float32Array([4, 5, 6]), 1e-5,
+        'reduceMax (axis=0)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_max');
+
+      // 6 reduceMean
+      // https://www.tensorflow.org/api_docs/python/tf/math/reduce_mean
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceMean(x, o),
+        new Float32Array([3.5]), 1e-5,
+        'reduceMean (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_mean');
+      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceMean(x, o),
+        new Float32Array([2, 5]), 1e-5,
+        'reduceMean (axis=1)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_mean');
+
+      // 7 reduceMin
+      // https://www.tensorflow.org/api_docs/python/tf/math/reduce_min
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceMin(x, o),
+        new Float32Array([1]), 1e-5,
+        'reduceMin (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_min');
+      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceMin(x, o),
+        new Float32Array([1, 2, 3]), 1e-5,
+        'reduceMin (axis=0)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_min');
+
+      // 8 reduceProduct
+      // https://pytorch.org/docs/stable/generated/torch.prod.html
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceProduct(x, o),
+        new Float32Array([720]), 1e-5,
+        'reduceProduct (full)', 'https://pytorch.org/docs/stable/generated/torch.prod.html');
+      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceProduct(x, o),
+        new Float32Array([6, 120]), 1e-5,
+        'reduceProduct (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.prod.html');
+
+      // 9 reduceSum
+      // https://www.tensorflow.org/api_docs/python/tf/math/reduce_sum
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceSum(x, o),
+        new Float32Array([21]), 1e-5,
+        'reduceSum (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_sum');
+      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceSum(x, o),
+        new Float32Array([5, 7, 9]), 1e-5,
+        'reduceSum (axis=0)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_sum');
+
+      // 10 reduceSumSquare
+      // https://pytorch.org/docs/stable/generated/torch.sum.html
+      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceSumSquare(x, o),
+        new Float32Array([91]), 1e-5,
+        'reduceSumSquare (full)', 'https://pytorch.org/docs/stable/generated/torch.sum.html');
+      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceSumSquare(x, o),
+        new Float32Array([14, 77]), 1e-5,
+        'reduceSumSquare (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.sum.html');
+
+      context.destroy();
+      log('Context destroyed', true);
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost).';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

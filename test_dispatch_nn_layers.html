@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – NN Layers (Pool, Conv, Norm, Quantize)</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – NN Layers (Pool, Conv, Norm, Quantize)</h1>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    function arraysMatch(a, b, tol) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (tol === 0) { if (a[i] !== b[i]) return false; }
+        else { if (Math.abs(a[i] - b[i]) > tol) return false; }
+      }
+      return true;
+    }
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+      let context;
+      try { context = await navigator.ml.createContext({}); log('Context created', true); }
+      catch (e) { log('Context failed', false, e.message); showSummary(); return; }
+
+      // ============================
+      // 1. POOLING (3)
+      // ============================
+
+      // 1a  averagePool2d
+      // https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const d = { dataType: 'float32', shape: [1, 1, 4, 4] };
+        const x = b.input('x', d);
+        const o = b.averagePool2d(x, { windowDimensions: [2, 2], strides: [2, 2], layout: 'nchw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 4, 4], writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        const exp = new Float32Array([3.5, 5.5, 11.5, 13.5]); // 2x2 avg pool with stride 2
+        const ok = arraysMatch(r, exp, 1e-4);
+        const s = `Got: [${Array.from(r).map(v => v.toFixed(2)).join(', ')}]`;
+        if (ok) log('averagePool2d', true, s); else log('averagePool2d', false, `${s}, Expected: [3.50, 5.50, 11.50, 13.50]`);
+        g.destroy(); iT.destroy(); oT.destroy();
+      } catch (e) { log('averagePool2d', false, e.message); }
+
+      // 1b  maxPool2d
+      // https://pytorch.org/docs/stable/generated/torch.nn.MaxPool2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const d = { dataType: 'float32', shape: [1, 1, 4, 4] };
+        const x = b.input('x', d);
+        const o = b.maxPool2d(x, { windowDimensions: [2, 2], strides: [2, 2], layout: 'nchw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 4, 4], writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        const exp = new Float32Array([6, 8, 14, 16]);
+        const ok = arraysMatch(r, exp, 1e-5);
+        const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`;
+        if (ok) log('maxPool2d', true, s); else log('maxPool2d', false, `${s}, Expected: [6, 8, 14, 16]`);
+        g.destroy(); iT.destroy(); oT.destroy();
+      } catch (e) { log('maxPool2d', false, e.message); }
+
+      // 1c  l2Pool2d
+      // https://pytorch.org/docs/stable/generated/torch.nn.LPPool2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const d = { dataType: 'float32', shape: [1, 1, 4, 4] };
+        const x = b.input('x', d);
+        const o = b.l2Pool2d(x, { windowDimensions: [2, 2], strides: [2, 2], layout: 'nchw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 4, 4], writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        // L2 norm: sqrt(1²+2²+5²+6²)=sqrt(66)=8.124, sqrt(3²+4²+7²+8²)=sqrt(138)=11.747, etc.
+        const exp = new Float32Array([
+          Math.sqrt(66), Math.sqrt(138), Math.sqrt(474), Math.sqrt(690)
+        ]);
+        const ok = arraysMatch(r, exp, 1e-4);
+        const s = `Got: [${Array.from(r).map(v => v.toFixed(4)).join(', ')}]`;
+        if (ok) log('l2Pool2d', true, s); else log('l2Pool2d', false, s);
+        g.destroy(); iT.destroy(); oT.destroy();
+      } catch (e) { log('l2Pool2d', false, e.message); }
+
+      // ============================
+      // 2. CONVOLUTION (2)
+      // ============================
+
+      // 2a  conv2d  (1x1x5x5 input, 1x1x3x3 filter, padding=0)
+      // https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [1, 1, 5, 5] };
+        const fD = { dataType: 'float32', shape: [1, 1, 3, 3] };
+        const x = b.input('x', iD);
+        const f = b.input('f', fD);
+        const o = b.conv2d(x, f, { padding: [0, 0, 0, 0], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const fT = await context.createTensor({ dataType: 'float32', shape: fD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array(25).fill(1));
+        context.writeTensor(fT, new Float32Array(9).fill(1));
+        context.dispatch(g, { x: iT, f: fT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        const exp = new Float32Array(9).fill(9); // 3x3 conv on all-ones with all-ones filters => 9
+        const ok = arraysMatch(r, exp, 1e-5);
+        const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`;
+        if (ok) log('conv2d', true, s); else log('conv2d', false, s);
+        g.destroy(); iT.destroy(); fT.destroy(); oT.destroy();
+      } catch (e) { log('conv2d', false, e.message); }
+
+      // 2b  convTranspose2d
+      // https://pytorch.org/docs/stable/generated/torch.nn.ConvTranspose2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [1, 1, 3, 3] };
+        const fD = { dataType: 'float32', shape: [1, 1, 3, 3] };
+        const x = b.input('x', iD);
+        const f = b.input('f', fD);
+        const o = b.convTranspose2d(x, f, { strides: [2, 2], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const fT = await context.createTensor({ dataType: 'float32', shape: fD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array(9).fill(1));
+        context.writeTensor(fT, new Float32Array(9).fill(1));
+        context.dispatch(g, { x: iT, f: fT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        // shape validation only — values depend on padding
+        log('convTranspose2d', o.shape.length === 4 && r.length > 0, `Output shape: [${o.shape}], elements: ${r.length}`);
+        g.destroy(); iT.destroy(); fT.destroy(); oT.destroy();
+      } catch (e) { log('convTranspose2d', false, e.message); }
+
+      // ============================
+      // 3. NORMALIZATION (3)
+      // ============================
+
+      // 3a  batchNormalization
+      // https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [1, 2, 2, 2] };
+        const x = b.input('x', iD);
+        const mean = b.input('mean', { dataType: 'float32', shape: [2] });
+        const variance = b.input('variance', { dataType: 'float32', shape: [2] });
+        const o = b.batchNormalization(x, mean, variance, { axis: 1, epsilon: 1e-5 });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const mT = await context.createTensor({ dataType: 'float32', shape: [2], writable: true, readable: false });
+        const vT = await context.createTensor({ dataType: 'float32', shape: [2], writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]));
+        context.writeTensor(mT, new Float32Array([0, 0])); // mean=0
+        context.writeTensor(vT, new Float32Array([1, 1])); // variance=1
+        context.dispatch(g, { x: iT, mean: mT, variance: vT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        // With mean=0, var=1, no scale/bias => output = input
+        log('batchNormalization', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]), 1e-5),
+          `Got: [${Array.from(r).map(v => v.toFixed(2)).join(', ')}]`);
+        g.destroy(); iT.destroy(); mT.destroy(); vT.destroy(); oT.destroy();
+      } catch (e) { log('batchNormalization', false, e.message); }
+
+      // 3b  instanceNormalization
+      // https://pytorch.org/docs/stable/generated/torch.nn.InstanceNorm2d.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [2, 2, 2, 2] };
+        const x = b.input('x', iD);
+        const o = b.instanceNormalization(x, { layout: 'nchw', epsilon: 1e-5 });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 1, 1, 1, 1, 1, 1, 1, 1]));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        log('instanceNormalization', r.length === 16, `Output shape: [${o.shape}]`);
+        g.destroy(); iT.destroy(); oT.destroy();
+      } catch (e) { log('instanceNormalization', false, e.message); }
+
+      // 3c  layerNormalization
+      // https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [3, 4] };
+        const x = b.input('x', iD);
+        const o = b.layerNormalization(x, { axes: [1], epsilon: 1e-5 });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        log('layerNormalization', r.length === 12, `Output shape: [${o.shape}]`);
+        g.destroy(); iT.destroy(); oT.destroy();
+      } catch (e) { log('layerNormalization', false, e.message); }
+
+      // ============================
+      // 4. QUANTIZE (2)
+      // ============================
+
+      // 4a  quantizeLinear  (float32 + scale + zp → uint8)
+      // https://onnx.ai/onnx/operators/onnx__QuantizeLinear.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const x = b.input('x', { dataType: 'float32', shape: [3] });
+        const scale = b.input('scale', { dataType: 'float32', shape: [1] });
+        const zp = b.input('zp', { dataType: 'int32', shape: [1] });
+        const o = b.quantizeLinear(x, scale, zp);
+        const g = await b.build({ o });
+        const xT = await context.createTensor({ dataType: 'float32', shape: [3], writable: true, readable: false });
+        const sT = await context.createTensor({ dataType: 'float32', shape: [1], writable: true, readable: false });
+        const zT = await context.createTensor({ dataType: 'int32', shape: [1], writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'uint8', shape: [3], writable: false, readable: true });
+        context.writeTensor(xT, new Float32Array([0, 63.5, 127]));
+        context.writeTensor(sT, new Float32Array([0.5]));
+        context.writeTensor(zT, new Int32Array([0]));
+        context.dispatch(g, { x: xT, scale: sT, zp: zT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Uint8Array(buf);
+        log('quantizeLinear', arraysMatch(r, new Uint8Array([0, 127, 254]), 0),
+          `Got: [${Array.from(r).join(', ')}]`);
+        g.destroy(); xT.destroy(); sT.destroy(); zT.destroy(); oT.destroy();
+      } catch (e) { log('quantizeLinear', false, e.message); }
+
+      // 4b  dequantizeLinear  (uint8 + scale + zp → float32)
+      // https://onnx.ai/onnx/operators/onnx__DequantizeLinear.html
+      try {
+        const b = new MLGraphBuilder(context);
+        const x = b.input('x', { dataType: 'uint8', shape: [3] });
+        const scale = b.input('scale', { dataType: 'float32', shape: [1] });
+        const zp = b.input('zp', { dataType: 'uint8', shape: [1] });
+        const o = b.dequantizeLinear(x, scale, zp);
+        const g = await b.build({ o });
+        const xT = await context.createTensor({ dataType: 'uint8', shape: [3], writable: true, readable: false });
+        const sT = await context.createTensor({ dataType: 'float32', shape: [1], writable: true, readable: false });
+        const zT = await context.createTensor({ dataType: 'uint8', shape: [1], writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: [3], writable: false, readable: true });
+        context.writeTensor(xT, new Uint8Array([0, 128, 255]));
+        context.writeTensor(sT, new Float32Array([0.5]));
+        context.writeTensor(zT, new Uint8Array([128]));
+        context.dispatch(g, { x: xT, scale: sT, zp: zT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        const exp = new Float32Array([-64, 0, 63.5]);
+        log('dequantizeLinear', arraysMatch(r, exp, 1e-4),
+          `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`);
+        g.destroy(); xT.destroy(); sT.destroy(); zT.destroy(); oT.destroy();
+      } catch (e) { log('dequantizeLinear', false, e.message); }
+
+      context.destroy();
+      log('Context destroyed', true);
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost).';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
