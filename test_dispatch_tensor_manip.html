@@ -39,18 +39,27 @@
       return true;
     }
 
+    async function runWithContext(name, fn) {
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+        await fn(context);
+        context.destroy();
+      } catch (e) {
+        if (context) context.destroy();
+        log(name, false, e.message);
+      }
+    }
+
     async function runTests() {
       if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
       log('WebNN API available', true);
       if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
       log('Secure context OK', true);
-      let context;
-      try { context = await navigator.ml.createContext({}); log('Context created', true); }
-      catch (e) { log('Context failed', false, e.message); showSummary(); return; }
 
       // 1  concat — three 1x3 tensors along axis=0 → [3, 3]
       // https://pytorch.org/docs/stable/generated/torch.cat.html
-      try {
+      await runWithContext('concat', async (context) => {
         const b = new MLGraphBuilder(context);
         const d = { dataType: 'float32', shape: [1, 3] };
         const a1 = b.input('a1', d); const a2 = b.input('a2', d); const a3 = b.input('a3', d);
@@ -69,11 +78,11 @@
         log('concat', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); t1.destroy(); t2.destroy(); t3.destroy(); to.destroy();
-      } catch (e) { log('concat', false, e.message); }
+      });
 
       // 2  expand — [1, 3] -> [2, 3] by broadcasting dim 0
       // https://pytorch.org/docs/stable/generated/torch.Tensor.expand.html
-      try {
+      await runWithContext('expand', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [1, 3] });
         const o = b.expand(x, [2, 3]);
@@ -87,11 +96,11 @@
         log('expand', arraysMatch(r, new Float32Array([10, 20, 30, 10, 20, 30]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('expand', false, e.message); }
+      });
 
       // 3  reshape — [2, 3] -> [6]
       // https://pytorch.org/docs/stable/generated/torch.reshape.html
-      try {
+      await runWithContext('reshape', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [2, 3] });
         const o = b.reshape(x, [6]);
@@ -105,11 +114,11 @@
         log('reshape', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('reshape', false, e.message); }
+      });
 
       // 4  reverse — [1, 2, 3] along axis 0 → [3, 2, 1]
       // https://pytorch.org/docs/stable/generated/torch.flip.html
-      try {
+      await runWithContext('reverse', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [3] });
         const o = b.reverse(x, { axes: [0] });
@@ -123,11 +132,11 @@
         log('reverse', arraysMatch(r, new Float32Array([3, 2, 1]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('reverse', false, e.message); }
+      });
 
       // 5  slice — [1, 2, 3, 4, 5] from index 1 size 3 → [2, 3, 4]
       // https://pytorch.org/docs/stable/generated/torch.slice.html
-      try {
+      await runWithContext('slice', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [5] });
         const o = b.slice(x, [1], [3]);
@@ -141,11 +150,11 @@
         log('slice', arraysMatch(r, new Float32Array([2, 3, 4]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('slice', false, e.message); }
+      });
 
       // 6  split — [1,2,3,4,5,6] into 3 chunks of size 2
       // https://pytorch.org/docs/stable/generated/torch.split.html
-      try {
+      await runWithContext('split', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [6] });
         const outs = b.split(x, 3);
@@ -165,11 +174,11 @@
         log('split', arraysMatch(r0, [1, 2], 1e-5) && arraysMatch(r1, [3, 4], 1e-5) && arraysMatch(r2, [5, 6], 1e-5),
           `Chunks: [${Array.from(r0).join(', ')}], [${Array.from(r1).join(', ')}], [${Array.from(r2).join(', ')}]`);
         g.destroy(); iT.destroy(); t0.destroy(); t1.destroy(); t2.destroy();
-      } catch (e) { log('split', false, e.message); }
+      });
 
       // 7  tile — [1, 2, 3] repeated 2 times → [1, 2, 3, 1, 2, 3]
       // https://pytorch.org/docs/stable/generated/torch.tile.html
-      try {
+      await runWithContext('tile', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [3] });
         const o = b.tile(x, [2]);
@@ -183,11 +192,11 @@
         log('tile', arraysMatch(r, new Float32Array([1, 2, 3, 1, 2, 3]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('tile', false, e.message); }
+      });
 
       // 8  transpose — [[1,2],[3,4]] with permutation [1,0] → [[1,3],[2,4]]
       // https://pytorch.org/docs/stable/generated/torch.transpose.html
-      try {
+      await runWithContext('transpose', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [2, 2] });
         const o = b.transpose(x, { permutation: [1, 0] });
@@ -201,11 +210,11 @@
         log('transpose', arraysMatch(r, new Float32Array([1, 3, 2, 4]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('transpose', false, e.message); }
+      });
 
       // 9  triangular (upper) — extracts upper triangle
       // https://pytorch.org/docs/stable/generated/torch.triu.html
-      try {
+      await runWithContext('triangular (upper)', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [3, 3] });
         const o = b.triangular(x, { upper: true });
@@ -219,11 +228,11 @@
         log('triangular (upper)', arraysMatch(r, new Float32Array([1, 2, 3, 0, 5, 6, 0, 0, 9]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('triangular (upper)', false, e.message); }
+      });
 
       // 10  pad — constant padding
       // https://pytorch.org/docs/stable/generated/torch.nn.functional.pad.html
-      try {
+      await runWithContext('pad', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [2, 2] });
         const o = b.pad(x, [1, 1], [1, 1]);
@@ -237,11 +246,11 @@
         log('pad', arraysMatch(r, new Float32Array([0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('pad', false, e.message); }
+      });
 
       // 11  cast — float32 → int32
       // https://pytorch.org/docs/stable/generated/torch.Tensor.to.html
-      try {
+      await runWithContext('cast', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [4] });
         const o = b.cast(x, 'int32');
@@ -255,11 +264,11 @@
         log('cast (float32→int32)', arraysMatch(r, new Int32Array([1, 2, -3, 4]), 0),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('cast', false, e.message); }
+      });
 
       // 12  where — conditional selection
       // https://pytorch.org/docs/stable/generated/torch.where.html
-      try {
+      await runWithContext('where', async (context) => {
         const b = new MLGraphBuilder(context);
         const cond = b.input('cond', { dataType: 'uint8', shape: [3] });
         const tVal = b.input('t', { dataType: 'float32', shape: [3] });
@@ -279,11 +288,11 @@
         log('where', arraysMatch(r, new Float32Array([10, 50, 30]), 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); cT.destroy(); tT.destroy(); fT.destroy(); oT.destroy();
-      } catch (e) { log('where', false, e.message); }
+      });
 
       // 13  matmul
       // https://pytorch.org/docs/stable/generated/torch.matmul.html
-      try {
+      await runWithContext('matmul', async (context) => {
         const b = new MLGraphBuilder(context);
         const a = b.input('a', { dataType: 'float32', shape: [2, 2] });
         const c = b.input('c', { dataType: 'float32', shape: [2, 2] });
@@ -300,11 +309,11 @@
         log('matmul', arraysMatch(r, new Float32Array([19, 22, 43, 50]), 1e-4),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); aT.destroy(); cT.destroy(); oT.destroy();
-      } catch (e) { log('matmul', false, e.message); }
+      });
 
       // 14  gemm (alpha*a*b + beta*c)
       // https://pytorch.org/docs/stable/generated/torch.addmm.html
-      try {
+      await runWithContext('gemm', async (context) => {
         const b = new MLGraphBuilder(context);
         const aM = b.input('a', { dataType: 'float32', shape: [2, 2] });
         const bM = b.input('b', { dataType: 'float32', shape: [2, 2] });
@@ -321,11 +330,11 @@
         log('gemm', arraysMatch(r, new Float32Array([19, 22, 43, 50]), 1e-4),
           `Got: [${Array.from(r).join(', ')}]`);
         g.destroy(); aT.destroy(); bT.destroy(); oT.destroy();
-      } catch (e) { log('gemm', false, e.message); }
+      });
 
       // 15  resample2d — nearest-neighbor upscale 2x
       // https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html
-      try {
+      await runWithContext('resample2d', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [1, 1, 2, 2] });
         const o = b.resample2d(x, { scales: [2, 2], mode: 'nearest-neighbor', axes: [2, 3] });
@@ -339,10 +348,8 @@
         const exp = new Float32Array([1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4]);
         log('resample2d', arraysMatch(r, exp, 1e-5), `Got shape: [${o.shape}]`);
         g.destroy(); iT.destroy(); oT.destroy();
-      } catch (e) { log('resample2d', false, e.message); }
+      });
 
-      context.destroy();
-      log('Context destroyed', true);
       showSummary();
     }
 

@@ -39,8 +39,10 @@
       return true;
     }
 
-    async function runReduce(context, inputData, inputShape, axes, keepDims, buildFn, expected, tolerance, opName, refUrl) {
+    async function runReduce(inputData, inputShape, axes, keepDims, buildFn, expected, tolerance, opName, refUrl) {
+      let context;
       try {
+        context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const input = builder.input('input', { dataType: 'float32', shape: inputShape });
         const output = (axes !== null)
@@ -59,7 +61,11 @@
           log(opName, false, `${s}, Expected: [${Array.from(expected).map(v => v.toFixed(4)).join(', ')}]`);
         }
         graph.destroy(); iTensor.destroy(); oTensor.destroy();
-      } catch (e) { log(opName, false, e.message); }
+        context.destroy();
+      } catch (e) {
+        if (context) context.destroy();
+        log(opName, false, e.message);
+      }
     }
 
     async function runTests() {
@@ -67,9 +73,6 @@
       log('WebNN API available', true);
       if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
       log('Secure context OK', true);
-      let context;
-      try { context = await navigator.ml.createContext({}); log('Context created', true); }
-      catch (e) { log('Context failed', false, e.message); showSummary(); return; }
 
       // Input: [1, 2, 3, 4, 5, 6] shaped [2, 3]
       // Sum: 21, Mean: 3.5, Max: 6, Min: 1, Product: 720
@@ -81,31 +84,31 @@
 
       // 1 reduceL1  — sum of absolute values
       // https://pytorch.org/docs/stable/generated/torch.norm.html
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceL1(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceL1(x, o),
         new Float32Array([21]), 1e-4,
         'reduceL1 (full)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
-      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceL1(x, o),
+      await runReduce( inp, [2, 3], [0], false, (b, x, o) => b.reduceL1(x, o),
         new Float32Array([5, 7, 9]), 1e-4,
         'reduceL1 (axis=0)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
-      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceL1(x, o),
+      await runReduce( inp, [2, 3], [1], false, (b, x, o) => b.reduceL1(x, o),
         new Float32Array([6, 15]), 1e-4,
         'reduceL1 (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
 
       // 2 reduceL2  — sqrt(sum of squares)
       // https://pytorch.org/docs/stable/generated/torch.norm.html
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceL2(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceL2(x, o),
         new Float32Array([Math.sqrt(91)]), 1e-4,
         'reduceL2 (full)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
-      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceL2(x, o),
+      await runReduce( inp, [2, 3], [0], false, (b, x, o) => b.reduceL2(x, o),
         new Float32Array([Math.sqrt(17), Math.sqrt(29), Math.sqrt(45)]), 1e-4,
         'reduceL2 (axis=0)', 'https://pytorch.org/docs/stable/generated/torch.norm.html');
 
       // 3 reduceLogSum  — log(sum)
       // https://pytorch.org/docs/stable/generated/torch.logsumexp.html
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceLogSum(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceLogSum(x, o),
         new Float32Array([Math.log(21)]), 1e-4,
         'reduceLogSum (full)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
-      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceLogSum(x, o),
+      await runReduce( inp, [2, 3], [1], false, (b, x, o) => b.reduceLogSum(x, o),
         new Float32Array([Math.log(6), Math.log(15)]), 1e-4,
         'reduceLogSum (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
 
@@ -116,70 +119,68 @@
           const mx = Math.max(...arr);
           return mx + Math.log(arr.reduce((s, v) => s + Math.exp(v - mx), 0));
         }
-        await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceLogSumExp(x, o),
+        await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceLogSumExp(x, o),
           new Float32Array([logSumExp([1, 2, 3, 4, 5, 6])]), 1e-3,
           'reduceLogSumExp (full)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
-        await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceLogSumExp(x, o),
+        await runReduce( inp, [2, 3], [1], false, (b, x, o) => b.reduceLogSumExp(x, o),
           new Float32Array([logSumExp([1, 2, 3]), logSumExp([4, 5, 6])]), 1e-3,
           'reduceLogSumExp (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.logsumexp.html');
       }
 
       // 5 reduceMax
       // https://www.tensorflow.org/api_docs/python/tf/math/reduce_max
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceMax(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceMax(x, o),
         new Float32Array([6]), 1e-5,
         'reduceMax (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_max');
-      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceMax(x, o),
+      await runReduce( inp, [2, 3], [0], false, (b, x, o) => b.reduceMax(x, o),
         new Float32Array([4, 5, 6]), 1e-5,
         'reduceMax (axis=0)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_max');
 
       // 6 reduceMean
       // https://www.tensorflow.org/api_docs/python/tf/math/reduce_mean
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceMean(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceMean(x, o),
         new Float32Array([3.5]), 1e-5,
         'reduceMean (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_mean');
-      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceMean(x, o),
+      await runReduce( inp, [2, 3], [1], false, (b, x, o) => b.reduceMean(x, o),
         new Float32Array([2, 5]), 1e-5,
         'reduceMean (axis=1)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_mean');
 
       // 7 reduceMin
       // https://www.tensorflow.org/api_docs/python/tf/math/reduce_min
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceMin(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceMin(x, o),
         new Float32Array([1]), 1e-5,
         'reduceMin (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_min');
-      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceMin(x, o),
+      await runReduce( inp, [2, 3], [0], false, (b, x, o) => b.reduceMin(x, o),
         new Float32Array([1, 2, 3]), 1e-5,
         'reduceMin (axis=0)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_min');
 
       // 8 reduceProduct
       // https://pytorch.org/docs/stable/generated/torch.prod.html
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceProduct(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceProduct(x, o),
         new Float32Array([720]), 1e-5,
         'reduceProduct (full)', 'https://pytorch.org/docs/stable/generated/torch.prod.html');
-      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceProduct(x, o),
+      await runReduce( inp, [2, 3], [1], false, (b, x, o) => b.reduceProduct(x, o),
         new Float32Array([6, 120]), 1e-5,
         'reduceProduct (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.prod.html');
 
       // 9 reduceSum
       // https://www.tensorflow.org/api_docs/python/tf/math/reduce_sum
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceSum(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceSum(x, o),
         new Float32Array([21]), 1e-5,
         'reduceSum (full)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_sum');
-      await runReduce(context, inp, [2, 3], [0], false, (b, x, o) => b.reduceSum(x, o),
+      await runReduce( inp, [2, 3], [0], false, (b, x, o) => b.reduceSum(x, o),
         new Float32Array([5, 7, 9]), 1e-5,
         'reduceSum (axis=0)', 'https://www.tensorflow.org/api_docs/python/tf/math/reduce_sum');
 
       // 10 reduceSumSquare
       // https://pytorch.org/docs/stable/generated/torch.sum.html
-      await runReduce(context, inp, [2, 3], null, false, (b, x, o) => b.reduceSumSquare(x, o),
+      await runReduce( inp, [2, 3], null, false, (b, x, o) => b.reduceSumSquare(x, o),
         new Float32Array([91]), 1e-5,
         'reduceSumSquare (full)', 'https://pytorch.org/docs/stable/generated/torch.sum.html');
-      await runReduce(context, inp, [2, 3], [1], false, (b, x, o) => b.reduceSumSquare(x, o),
+      await runReduce( inp, [2, 3], [1], false, (b, x, o) => b.reduceSumSquare(x, o),
         new Float32Array([14, 77]), 1e-5,
         'reduceSumSquare (axis=1)', 'https://pytorch.org/docs/stable/generated/torch.sum.html');
 
-      context.destroy();
-      log('Context destroyed', true);
       showSummary();
     }
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>webnn tests</title>
+</head>
+<body>
+  <h1>webnn tests</h1>
+  <p>WebNN requires a secure context (HTTPS or localhost). Run via: <code>python -m http.server 8080</code></p>
+
+  <h2>Unit Tests</h2>
+  <ul>
+    <li><a href="test_context.html">test_context.html</a> — 6 tests, MLContext creation/destruction</li>
+    <li><a href="test_builder.html">test_builder.html</a> — 3 tests, MLGraphBuilder creation</li>
+    <li><a href="test_operators.html">test_operators.html</a> — 30+ tests, operator node creation</li>
+    <li><a href="test_build.html">test_build.html</a> — 30+ tests, graph building</li>
+    <li><a href="test_tensor.html">test_tensor.html</a> — 3 tests, tensor lifecycle (create/write/read)</li>
+  </ul>
+
+  <h2>Dispatch Tests</h2>
+  <ul>
+    <li><a href="test_dispatch_elementwise.html">test_dispatch_elementwise.html</a> — 34 element-wise ops</li>
+    <li><a href="test_dispatch_reduction.html">test_dispatch_reduction.html</a> — 10 reduction ops</li>
+    <li><a href="test_dispatch_activations.html">test_dispatch_activations.html</a> — 17 activation/NN ops</li>
+    <li><a href="test_dispatch_nn_layers.html">test_dispatch_nn_layers.html</a> — 10 pooling/conv/norm/quantize ops</li>
+    <li><a href="test_dispatch_tensor_manip.html">test_dispatch_tensor_manip.html</a> — 15 tensor manipulation ops</li>
+    <li><a href="test_dispatch_advanced.html">test_dispatch_advanced.html</a> — 5 gather/scatter + 4 RNN placeholders</li>
+  </ul>
+
+  <h2>Prototype Tests</h2>
+  <ul>
+    <li><a href="test_dispatch_cos.html">test_dispatch_cos.html</a> — cosine dispatch</li>
+    <li><a href="test_dispatch_identity.html">test_dispatch_identity.html</a> — identity dispatch</li>
+  </ul>
+
+  <p><em>Test values adapted from PyTorch, TensorFlow, MLX, and JAX.</em></p>
+</body>
+</html>
