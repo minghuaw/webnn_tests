@@ -183,31 +183,25 @@
       // 6  GRU  (placeholder — skip dispatch)
       // https://pytorch.org/docs/stable/generated/torch.nn.GRU.html
       await runWithContext('GRU (placeholder)', async (context) => {
-        const b = new MLGraphBuilder(context);
-        // GRU requires input [steps, batch, inputSize], weight [numDirections, 3*hiddenSize, inputSize], etc.
-        // Testing graph-building only for now.
-        log('GRU (placeholder)', true, 'graph-building test — dispatch skipped');
+        log('GRU (placeholder)', false, 'dispatch skipped — not yet implemented');
       });
 
       // 7  GRUCell  (placeholder — skip dispatch)
       // https://pytorch.org/docs/stable/generated/torch.nn.GRUCell.html
       await runWithContext('GRUCell (placeholder)', async (context) => {
-        const b = new MLGraphBuilder(context);
-        log('GRUCell (placeholder)', true, 'graph-building test — dispatch skipped');
+        log('GRUCell (placeholder)', false, 'dispatch skipped — not yet implemented');
       });
 
       // 8  LSTM  (placeholder — skip dispatch)
       // https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
       await runWithContext('LSTM (placeholder)', async (context) => {
-        const b = new MLGraphBuilder(context);
-        log('LSTM (placeholder)', true, 'graph-building test — dispatch skipped');
+        log('LSTM (placeholder)', false, 'dispatch skipped — not yet implemented');
       });
 
       // 9  LSTMCell  (placeholder — skip dispatch)
       // https://pytorch.org/docs/stable/generated/torch.nn.LSTMCell.html
       await runWithContext('LSTMCell (placeholder)', async (context) => {
-        const b = new MLGraphBuilder(context);
-        log('LSTMCell (placeholder)', true, 'graph-building test — dispatch skipped');
+        log('LSTMCell (placeholder)', false, 'dispatch skipped — not yet implemented');
       });
 
       showSummary();

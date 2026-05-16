@@ -65,9 +65,9 @@
         const a1 = b.input('a1', d); const a2 = b.input('a2', d); const a3 = b.input('a3', d);
         const o = b.concat([a1, a2, a3], 0);
         const g = await b.build({ o });
-        const t1 = await context.createTensor(d, { writable: true, readable: false });
-        const t2 = await context.createTensor(d, { writable: true, readable: false });
-        const t3 = await context.createTensor(d, { writable: true, readable: false });
+        const t1 = await context.createTensor({ dataType: 'float32', shape: [1, 3], writable: true, readable: false });
+        const t2 = await context.createTensor({ dataType: 'float32', shape: [1, 3], writable: true, readable: false });
+        const t3 = await context.createTensor({ dataType: 'float32', shape: [1, 3], writable: true, readable: false });
         const to = await context.createTensor({ dataType: 'float32', shape: [3, 3], writable: false, readable: true });
         context.writeTensor(t1, new Float32Array([1, 2, 3]));
         context.writeTensor(t2, new Float32Array([4, 5, 6]));
