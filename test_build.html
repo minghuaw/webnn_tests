@@ -81,8 +81,8 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const mean = builder.input('mean', { dataType: 'float32', shape: [3] });
-        const variance = builder.input('variance', { dataType: 'float32', shape: [3] });
+        const mean = builder.constant({ dataType: 'float32', shape: [3] }, new Float32Array(3).fill(0));
+        const variance = builder.constant({ dataType: 'float32', shape: [3] }, new Float32Array(3).fill(1));
         const result = builder.batchNormalization(a, mean, variance);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> batchNormalization (default epsilon)', graph instanceof MLGraph);
@@ -156,7 +156,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const input = builder.input('input', { dataType: 'float32', shape: [1, 1, 4, 4] });
-        const filter = builder.input('filter', { dataType: 'float32', shape: [1, 1, 2, 2] });
+        const filter = builder.constant({ dataType: 'float32', shape: [1, 1, 2, 2] }, new Float32Array(4).fill(1));
         const result = builder.conv2d(input, filter);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> conv2d (default options)', graph instanceof MLGraph);
@@ -175,7 +175,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const input = builder.input('input', { dataType: 'float32', shape: [1, 1, 2, 2] });
-        const filter = builder.input('filter', { dataType: 'float32', shape: [1, 1, 2, 2] });
+        const filter = builder.constant({ dataType: 'float32', shape: [1, 1, 2, 2] }, new Float32Array(4).fill(1));
         const result = builder.convTranspose2d(input, filter);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> convTranspose2d', graph instanceof MLGraph);
@@ -212,8 +212,8 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'uint8', shape: [2, 3] });
-        const scale = builder.input('scale', { dataType: 'float32', shape: [1, 1] });
-        const zeroPoint = builder.input('zeroPoint', { dataType: 'uint8', shape: [1, 1] });
+        const scale = builder.constant({ dataType: 'float32', shape: [1, 1] }, new Float32Array([1]));
+        const zeroPoint = builder.constant({ dataType: 'uint8', shape: [1, 1] }, new Uint8Array([128]));
         const result = builder.dequantizeLinear(a, scale, zeroPoint);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> dequantizeLinear', graph instanceof MLGraph);
@@ -772,7 +772,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const indices = builder.input('indices', { dataType: 'int32', shape: [2] });
+        const indices = builder.constant({ dataType: 'int32', shape: [2] }, new Int32Array([0, 1]));
         const result = builder.gather(a, indices);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> gather (default axis)', graph instanceof MLGraph);
@@ -810,7 +810,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const indices = builder.input('indices', { dataType: 'int32', shape: [2, 2] });
+        const indices = builder.constant({ dataType: 'int32', shape: [2, 2] }, new Int32Array([0, 0, 1, 1]));
         const result = builder.gatherND(a, indices);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> gatherND', graph instanceof MLGraph);
@@ -1132,7 +1132,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const slope = builder.input('slope', { dataType: 'float32', shape: [2, 3] });
+        const slope = builder.constant({ dataType: 'float32', shape: [2, 3] }, new Float32Array(6).fill(0.5));
         const result = builder.prelu(a, slope);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> prelu', graph instanceof MLGraph);
@@ -1151,8 +1151,8 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const scale = builder.input('scale', { dataType: 'float32', shape: [1, 1] });
-        const zeroPoint = builder.input('zeroPoint', { dataType: 'int32', shape: [1, 1] });
+        const scale = builder.constant({ dataType: 'float32', shape: [1, 1] }, new Float32Array([1]));
+        const zeroPoint = builder.constant({ dataType: 'int32', shape: [1, 1] }, new Int32Array([0]));
         const result = builder.quantizeLinear(a, scale, zeroPoint);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> quantizeLinear', graph instanceof MLGraph);
@@ -1388,7 +1388,7 @@
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
         const indices = builder.constant({ dataType: 'int32', shape: [2, 3] }, new Int32Array([0, 0, 0, 1, 1, 1]));
-        const updates = builder.input('updates', { dataType: 'float32', shape: [2, 3] });
+        const updates = builder.constant({ dataType: 'float32', shape: [2, 3] }, new Float32Array(6).fill(1));
         const result = builder.scatterElements(a, indices, updates);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> scatterElements', graph instanceof MLGraph);
@@ -1404,7 +1404,7 @@
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
         const indices = builder.constant({ dataType: 'int32', shape: [2, 1] }, new Int32Array([0, 1]));
-        const updates = builder.input('updates', { dataType: 'float32', shape: [2, 3] });
+        const updates = builder.constant({ dataType: 'float32', shape: [2, 3] }, new Float32Array(6).fill(1));
         const result = builder.scatterND(a, indices, updates);
         const graph = await builder.build({ output: result });
         log('build graph with chain: input -> scatterND', graph instanceof MLGraph);
@@ -1629,8 +1629,8 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const mean = builder.input('mean', { dataType: 'float32', shape: [3] });
-        const variance = builder.input('variance', { dataType: 'float32', shape: [3] });
+        const mean = builder.constant({ dataType: 'float32', shape: [3] }, new Float32Array(3).fill(0));
+        const variance = builder.constant({ dataType: 'float32', shape: [3] }, new Float32Array(3).fill(1));
         const result = builder.batchNormalization(a, mean, variance, { epsilon: 0.001 });
         const graph = await builder.build({ output: result });
         logOptional('build graph with chain: input -> batchNormalization (epsilon=0.001)', graph instanceof MLGraph);
@@ -1659,7 +1659,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const input = builder.input('input', { dataType: 'float32', shape: [1, 1, 8, 8] });
-        const filter = builder.input('filter', { dataType: 'float32', shape: [1, 1, 2, 2] });
+        const filter = builder.constant({ dataType: 'float32', shape: [1, 1, 2, 2] }, new Float32Array(4).fill(1));
         const result = builder.conv2d(input, filter, { strides: [2, 2] });
         const graph = await builder.build({ output: result });
         logOptional('build graph with chain: input -> conv2d (strides 2x2)', graph instanceof MLGraph);
@@ -1702,7 +1702,7 @@
         const context = await navigator.ml.createContext({});
         const builder = new MLGraphBuilder(context);
         const a = builder.input('a', { dataType: 'float32', shape: [2, 3] });
-        const indices = builder.input('indices', { dataType: 'int32', shape: [1] });
+        const indices = builder.constant({ dataType: 'int32', shape: [1] }, new Int32Array([0]));
         const result = builder.gather(a, indices, { axis: 1 });
         const graph = await builder.build({ output: result });
         logOptional('build graph with chain: input -> gather (axis=1)', graph instanceof MLGraph);
