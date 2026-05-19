@@ -298,6 +298,41 @@
         g.destroy(); xT.destroy(); sT.destroy(); zT.destroy(); oT.destroy();
       });
 
+      // ============================
+      // 5. CHAINED OPS (1)
+      // ============================
+
+      // 5a  transpose (NHWC→NCHW) + conv2d
+      // Tests: transpose + conv2d chained; transpose from [1,128,128,3] NHWC to [1,3,128,128] NCHW,
+      //        then conv2d with filter [24,3,5,5] OIHW.
+      await runWithContext('transpose+conv2d', async (context) => {
+        const b = new MLGraphBuilder(context);
+        // Input: NHWC [1, 128, 128, 3] all ones
+        const iD = { dataType: 'float32', shape: [1, 128, 128, 3] };
+        const fD = { dataType: 'float32', shape: [24, 3, 5, 5] };
+        const x = b.input('x', iD);
+        // Transpose NHWC → NCHW
+        const t = b.transpose(x, { permutation: [0, 3, 1, 2] });
+        // Filter as constant (all ones)
+        const f = b.constant(fD, new Float32Array(24 * 3 * 5 * 5).fill(1));
+        const o = b.conv2d(t, f, { padding: [0, 0, 0, 0], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array(1 * 128 * 128 * 3).fill(1));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        // All ones → each output = 3 * 5 * 5 = 75
+        const exp = 75;
+        const firstFew = Array.from(r.slice(0, 5)).map(v => v.toFixed(1));
+        const allMatch = r.every(v => Math.abs(v - exp) < 1e-5);
+        const shapeOk = o.shape.length === 4 && o.shape[1] === 24;
+        log('transpose+conv2d', allMatch && shapeOk,
+          `Output shape: [${o.shape}], first 5: [${firstFew.join(', ')}]`);
+        g.destroy(); iT.destroy(); oT.destroy();
+      });
+
       showSummary();
     }
 
