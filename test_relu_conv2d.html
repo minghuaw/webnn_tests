@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – relu + conv2d</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – relu + conv2d</h1>
+  <p>relu on [1,2,5,5] (mix of neg/pos), then conv2d w/ [3,2,3,3] filter.</p>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+      } catch (e) {
+        log('createContext', false, e.message);
+        showSummary();
+        return;
+      }
+
+      // relu + conv2d
+      // Input: [1, 2, 5, 5] NCHW, ch0 = -1, ch1 = 2
+      // relu → ch0 = 0, ch1 = 2
+      // Filter: [3, 2, 3, 3] OIHW, all ones (constant)
+      // conv2d → [1, 3, 3, 3], each = 0*3*3 + 2*3*3 = 18
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [1, 2, 5, 5] };
+        const fD = { dataType: 'float32', shape: [3, 2, 3, 3] };
+        const x = b.input('x', iD);
+        const r = b.relu(x);
+        const f = b.constant(fD, new Float32Array(3 * 2 * 3 * 3).fill(1));
+        const o = b.conv2d(r, f, { padding: [0, 0, 0, 0], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const g = await b.build({ o });
+        const xT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        const inData = new Float32Array(1 * 2 * 5 * 5);
+        inData.fill(-1, 0, 25);   // ch0 = -1
+        inData.fill(2, 25, 50);   // ch1 = 2
+        context.writeTensor(xT, inData);
+        context.dispatch(g, { x: xT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r_ = new Float32Array(buf);
+        const exp = 18; // 0*9 + 2*9
+        const firstFew = Array.from(r_.slice(0, 5)).map(v => v.toFixed(1));
+        const allMatch = r_.every(v => Math.abs(v - exp) < 1e-5);
+        log('relu+conv2d', allMatch,
+          `Output shape: [${o.shape}], first 5: [${firstFew.join(', ')}], expected each: ${exp}`);
+        g.destroy(); xT.destroy(); oT.destroy();
+      } catch (e) {
+        log('relu+conv2d', false, e.message);
+      }
+
+      context.destroy();
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost).';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – transpose + identity + conv2d</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – transpose + identity + conv2d</h1>
+  <p>Transpose NHWC→NCHW, identity, then conv2d. Verifies identity op doesn't break the chain.</p>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+      } catch (e) {
+        log('createContext', false, e.message);
+        showSummary();
+        return;
+      }
+
+      // transpose + identity + conv2d
+      // Input: NHWC [1, 128, 128, 3] all ones
+      // transpose → NCHW [1, 3, 128, 128]
+      // identity → [1, 3, 128, 128] (no-op)
+      // conv2d with filter [24, 3, 5, 5] all ones (constant)
+      // output: [1, 24, 124, 124], each = 3 * 5 * 5 = 75
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [1, 128, 128, 3] };
+        const fD = { dataType: 'float32', shape: [24, 3, 5, 5] };
+        const x = b.input('x', iD);
+        const t = b.transpose(x, { permutation: [0, 3, 1, 2] });
+        const id = b.identity(t);
+        const f = b.constant(fD, new Float32Array(24 * 3 * 5 * 5).fill(1));
+        const o = b.conv2d(id, f, { padding: [0, 0, 0, 0], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const g = await b.build({ o });
+        const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(iT, new Float32Array(1 * 128 * 128 * 3).fill(1));
+        context.dispatch(g, { x: iT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r = new Float32Array(buf);
+        const exp = 75;
+        const firstFew = Array.from(r.slice(0, 5)).map(v => v.toFixed(1));
+        const allMatch = r.every(v => Math.abs(v - exp) < 1e-5);
+        log('transpose+identity+conv2d', allMatch,
+          `Output shape: [${o.shape}], first 5: [${firstFew.join(', ')}], expected each: ${exp}`);
+        g.destroy(); iT.destroy(); oT.destroy();
+      } catch (e) {
+        log('transpose+identity+conv2d', false, e.message);
+      }
+
+      context.destroy();
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost).';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

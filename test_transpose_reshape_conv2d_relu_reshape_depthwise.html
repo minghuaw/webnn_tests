@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – transpose + reshape + conv2d + relu + reshape + depthwise</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – transpose + reshape + conv2d + relu + reshape + depthwise</h1>
+  <p>NHWC→NCHW → identity reshape → conv2d → relu → identity reshape → depthwise conv2d.</p>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+      } catch (e) {
+        log('createContext', false, e.message);
+        showSummary();
+        return;
+      }
+
+      // transpose + reshape (identity) + conv2d + relu + reshape (identity) + depthwise conv2d
+      // Input: NHWC [1, 64, 64, 3] all ones
+      // Transpose → NCHW [1, 3, 64, 64]
+      // Reshape identity → [1, 3, 64, 64]
+      // Conv2d: filter [4, 3, 3, 3] all ones, padding=1 → [1, 4, 64, 64], each = 3*3*3 = 27
+      // Relu: identity for positive → each = 27
+      // Reshape identity → [1, 4, 64, 64]
+      // Depthwise: filter [4, 1, 3, 3] all ones, padding=1, groups=4 → [1, 4, 64, 64], center = 27*3*3 = 243
+      try {
+        const b = new MLGraphBuilder(context);
+        const iD = { dataType: 'float32', shape: [1, 64, 64, 3] };
+        const f1D = { dataType: 'float32', shape: [4, 3, 3, 3] };
+        const f2D = { dataType: 'float32', shape: [4, 1, 3, 3] };
+        const x = b.input('x', iD);
+        const t = b.transpose(x, { permutation: [0, 3, 1, 2] });
+        const r1 = b.reshape(t, [1, 3, 64, 64]);
+        const f1 = b.constant(f1D, new Float32Array(4 * 3 * 3 * 3).fill(1));
+        const c1 = b.conv2d(r1, f1, { padding: [1, 1, 1, 1], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const r2 = b.relu(c1);
+        const r3 = b.reshape(r2, [1, 4, 64, 64]);
+        const f2 = b.constant(f2D, new Float32Array(4 * 1 * 3 * 3).fill(1));
+        const o = b.conv2d(r3, f2, { padding: [1, 1, 1, 1], strides: [1, 1], groups: 4, inputLayout: 'nchw', filterLayout: 'oihw' });
+        const g = await b.build({ o });
+        const xT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(xT, new Float32Array(1 * 64 * 64 * 3).fill(1));
+        context.dispatch(g, { x: xT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r_ = new Float32Array(buf);
+        const centerIdx = 0 * 64 * 64 + 32 * 64 + 32;
+        const exp = 243; // 27 * 3 * 3
+        const centerOk = Math.abs(r_[centerIdx] - exp) < 1e-5;
+        log('transpose+reshape+conv2d+relu+reshape+depthwise', centerOk,
+          `Output shape: [${o.shape}], ch0 center: ${r_[centerIdx].toFixed(1)}, expected: ${exp}`);
+        g.destroy(); xT.destroy(); oT.destroy();
+      } catch (e) {
+        log('transpose+reshape+conv2d+relu+reshape+depthwise', false, e.message);
+      }
+
+      context.destroy();
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost).';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
