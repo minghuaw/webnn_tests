@@ -21,6 +21,7 @@
   <ul>
     <li><a href="test_conv2d_3ch.html">test_conv2d_3ch.html</a> — conv2d with 3 input channels</li>
     <li><a href="test_transpose_conv2d.html">test_transpose_conv2d.html</a> — transpose (NHWC→NCHW) + conv2d</li>
+    <li><a href="test_conv2d_transpose.html">test_conv2d_transpose.html</a> — conv2d (NCHW) + transpose (→NHWC)</li>
     <li><a href="test_add_conv2d.html">test_add_conv2d.html</a> — add + conv2d</li>
     <li><a href="test_transpose_matmul.html">test_transpose_matmul.html</a> — transpose + matmul</li>
     <li><a href="test_matmul_conv2d.html">test_matmul_conv2d.html</a> — matmul + reshape + conv2d</li>
@@ -34,6 +35,9 @@
     <li><a href="test_transpose_identity_conv2d.html">test_transpose_identity_conv2d.html</a> — transpose + identity + conv2d</li>
     <li><a href="test_conv2d_relu_reshape_depthwise.html">test_conv2d_relu_reshape_depthwise.html</a> — conv2d + relu + reshape + depthwise conv2d</li>
     <li><a href="test_transpose_reshape_conv2d_relu_reshape_depthwise.html">test_transpose_reshape_conv2d_relu_reshape_depthwise.html</a> — transpose + reshape + conv2d + relu + reshape + depthwise</li>
+    <li><a href="test_transpose_reshape_conv2d_relu_reshape_depthwise_asymmetric.html">test_transpose_reshape_conv2d_relu_reshape_depthwise_asymmetric.html</a> — same with asymmetric padding [1,2,1,2]</li>
+    <li><a href="test_asymmetric_padding.html">test_asymmetric_padding.html</a> — conv2d with padding=[1,2,1,2] to verify backend support</li>
+    <li><a href="test_custom_graph.html">test_custom_graph.html</a> — custom graph (transpose + conv2d + relu + depthwise)</li>
     <li><a href="test_dispatch_constants.html">test_dispatch_constants.html</a> — 15 ops with constant operands (weights, indices, params)</li>
     <li><a href="test_dispatch_elementwise.html">test_dispatch_elementwise.html</a> — 34 element-wise ops</li>
     <li><a href="test_dispatch_reduction.html">test_dispatch_reduction.html</a> — 10 reduction ops</li>

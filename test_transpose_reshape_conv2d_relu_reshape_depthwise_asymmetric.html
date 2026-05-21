@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>WebNN Dispatch – transpose + reshape + conv2d + relu + reshape + depthwise</title>
+  <title>WebNN Dispatch – transpose + reshape + conv2d + relu + reshape + depthwise (asymmetric padding)</title>
   <style>
     body { font-family: monospace; padding: 20px; }
     .pass { color: green; }
@@ -11,8 +11,8 @@
   </style>
 </head>
 <body>
-  <h1>WebNN Dispatch – transpose + reshape + conv2d + relu + reshape + depthwise</h1>
-  <p>NHWC→NCHW → identity reshape → conv2d → relu → identity reshape → depthwise conv2d.</p>
+  <h1>WebNN Dispatch – transpose + reshape + conv2d + relu + reshape + depthwise (asymmetric padding)</h1>
+  <p>NHWC→NCHW → conv2d pad=[1,2,1,2] stride=2 → relu → depthwise pad=[1,1,1,1] stride=2 groups=4.</p>
   <div id="results"></div>
   <script>
     'use strict';
@@ -50,12 +50,12 @@
       // Input: NHWC [1, 128, 128, 3] all ones
       // Transpose → NCHW [1, 3, 128, 128]
       // Reshape identity → [1, 3, 128, 128]
-      // Conv2d #1: filter [4, 3, 3, 3] all ones, bias [1,2,3,4], padding=[2,2,2,2], strides=[3,3]
-      //   → [1, 4, 44, 44], interior each = 3*9 = 27 + bias
+      // Conv2d #1: filter [4, 3, 3, 3] all ones, bias [1,2,3,4], padding=[1,2,1,2], strides=[2,2]
+      //   → [1, 4, 65, 65], interior each = 3*3*3 = 27 + bias
       // Relu: identity for positive
-      // Reshape identity → [1, 4, 44, 44]
+      // Reshape identity → [1, 4, 65, 65]
       // Depthwise: filter [4, 1, 3, 3] all ones, bias [10,20,30,40], padding=[1,1,1,1], strides=[2,2], groups=4
-      //   → [1, 4, 22, 22], ch0 center = (27+1)*9 + 10 = 262
+      //   → [1, 4, 33, 33], ch0 center = (27+1)*9 + 10 = 262, corner = 89
       try {
         const b = new MLGraphBuilder(context);
         const iD = { dataType: 'float32', shape: [1, 128, 128, 3] };
@@ -66,9 +66,9 @@
         const r1 = b.reshape(t, [1, 3, 128, 128]);
         const f1 = b.constant(f1D, new Float32Array(4 * 3 * 3 * 3).fill(1));
         const b1 = b.constant({ dataType: 'float32', shape: [4] }, new Float32Array([1, 2, 3, 4]));
-        const c1 = b.conv2d(r1, f1, { padding: [2, 2, 2, 2], strides: [3, 3], bias: b1, inputLayout: 'nchw', filterLayout: 'oihw' });
+        const c1 = b.conv2d(r1, f1, { padding: [1, 2, 1, 2], strides: [2, 2], bias: b1, inputLayout: 'nchw', filterLayout: 'oihw' });
         const r2 = b.relu(c1);
-        const r3 = b.reshape(r2, [1, 4, 44, 44]);
+        const r3 = b.reshape(r2, r2.shape);
         const f2 = b.constant(f2D, new Float32Array(4 * 1 * 3 * 3).fill(1));
         const b2 = b.constant({ dataType: 'float32', shape: [4] }, new Float32Array([10, 20, 30, 40]));
         const o = b.conv2d(r3, f2, { padding: [1, 1, 1, 1], strides: [2, 2], bias: b2, groups: 4, inputLayout: 'nchw', filterLayout: 'oihw' });
@@ -79,15 +79,21 @@
         context.dispatch(g, { x: xT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r_ = new Float32Array(buf);
-        const centerIdx = 0 * 22 * 22 + 11 * 22 + 11;
-        const exp = 262; // (27+1)*9 + 10
-        const shapeOk = o.shape.length === 4 && o.shape[0] === 1 && o.shape[1] === 4 && o.shape[2] === 22 && o.shape[3] === 22;
-        const centerOk = Math.abs(r_[centerIdx] - exp) < 1e-5;
-        log('transpose+reshape+conv2d+relu+reshape+depthwise', shapeOk && centerOk,
-          `Output shape: [${o.shape}], ch0 center: ${r_[centerIdx].toFixed(1)}, expected: ${exp}`);
+        const S = o.shape[2]; // 33
+        const centerIdx = 0 * S * S + 16 * S + 16;
+        const cornerIdx = 0 * S * S + 0 * S + 0;
+        const centerExp = 262;
+        const cornerExp = 89; // (2*2*3+1)+(2*3*3+1)+(3*2*3+1)+(3*3*3+1) + 10 = 13+19+19+28+10
+        const shapeOk = o.shape.length === 4 && o.shape[0] === 1 && o.shape[1] === 4 && o.shape[2] === S && o.shape[3] === S;
+        const centerOk = Math.abs(r_[centerIdx] - centerExp) < 1e-5;
+        const cornerOk = Math.abs(r_[cornerIdx] - cornerExp) < 1e-5;
+        log('asym_chain_center', centerOk,
+          `Ch0 center[16,16]: ${r_[centerIdx].toFixed(1)}, expected ${centerExp}`);
+        log('asym_chain_corner', cornerOk,
+          `Ch0 corner[0,0]: ${r_[cornerIdx].toFixed(1)}, expected ${cornerExp} (symmetric would be 62)`);
         g.destroy(); xT.destroy(); oT.destroy();
       } catch (e) {
-        log('transpose+reshape+conv2d+relu+reshape+depthwise', false, e.message);
+        log('asym_chain', false, e.message);
       }
 
       context.destroy();
