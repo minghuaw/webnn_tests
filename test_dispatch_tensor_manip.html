@@ -346,7 +346,9 @@
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
         const exp = new Float32Array([1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4]);
-        log('resample2d', arraysMatch(r, exp, 1e-5), `Got shape: [${o.shape}]`);
+        const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}], shape: [${o.shape}]`;
+        if (arraysMatch(r, exp, 1e-5)) log('resample2d', true, s);
+        else log('resample2d', false, `${s}, Expected: [1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4]`);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
