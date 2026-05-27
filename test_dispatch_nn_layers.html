@@ -117,9 +117,10 @@
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
-        // L2 norm: sqrt(1²+2²+5²+6²)=sqrt(66)=8.124, sqrt(3²+4²+7²+8²)=sqrt(138)=11.747, etc.
+        // L2 norm: sqrt(1²+2²+5²+6²)=sqrt(66), sqrt(3²+4²+7²+8²)=sqrt(138),
+        // sqrt(9²+10²+13²+14²)=sqrt(546), sqrt(11²+12²+15²+16²)=sqrt(746)
         const exp = new Float32Array([
-          Math.sqrt(66), Math.sqrt(138), Math.sqrt(474), Math.sqrt(690)
+          Math.sqrt(66), Math.sqrt(138), Math.sqrt(546), Math.sqrt(746)
         ]);
         const ok = arraysMatch(r, exp, 1e-4);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(4)).join(', ')}]`;
@@ -164,7 +165,7 @@
         const fD = { dataType: 'float32', shape: [1, 1, 3, 3] };
         const x = b.input('x', iD);
         const f = b.input('f', fD);
-        const o = b.convTranspose2d(x, f, { strides: [2, 2], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const o = b.convTranspose2d(x, f, { strides: [2, 2], inputLayout: 'nchw', filterLayout: 'iohw' });
         const g = await b.build({ o });
         const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
         const fT = await context.createTensor({ dataType: 'float32', shape: fD.shape, writable: true, readable: false });
@@ -203,8 +204,9 @@
         context.dispatch(g, { x: iT, mean: mT, variance: vT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
-        // With mean=0, var=1, no scale/bias => output = input
-        log('batchNormalization', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]), 1e-5),
+        // With mean=0, var=1, epsilon=1e-5, no scale/bias: output = input / sqrt(1 + epsilon)
+        // Small numeric drift from epsilon is expected (≈5e-6 for value 1, ≈4e-5 for value 8)
+        log('batchNormalization', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8]), 1e-4),
           `Got: [${Array.from(r).map(v => v.toFixed(2)).join(', ')}]`);
         g.destroy(); iT.destroy(); mT.destroy(); vT.destroy(); oT.destroy();
       });
@@ -255,16 +257,16 @@
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [3] });
         const scale = b.input('scale', { dataType: 'float32', shape: [1] });
-        const zp = b.input('zp', { dataType: 'int32', shape: [1] });
+        const zp = b.input('zp', { dataType: 'uint8', shape: [1] });
         const o = b.quantizeLinear(x, scale, zp);
         const g = await b.build({ o });
         const xT = await context.createTensor({ dataType: 'float32', shape: [3], writable: true, readable: false });
         const sT = await context.createTensor({ dataType: 'float32', shape: [1], writable: true, readable: false });
-        const zT = await context.createTensor({ dataType: 'int32', shape: [1], writable: true, readable: false });
+        const zT = await context.createTensor({ dataType: 'uint8', shape: [1], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'uint8', shape: [3], writable: false, readable: true });
         context.writeTensor(xT, new Float32Array([0, 63.5, 127]));
         context.writeTensor(sT, new Float32Array([0.5]));
-        context.writeTensor(zT, new Int32Array([0]));
+        context.writeTensor(zT, new Uint8Array([0]));
         context.dispatch(g, { x: xT, scale: sT, zp: zT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Uint8Array(buf);
