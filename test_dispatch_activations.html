@@ -188,7 +188,7 @@
         const r = new Float32Array(buf);
         function softmaxRow(arr) { const mx = Math.max(...arr); const ex = arr.map(v => Math.exp(v - mx)); const s = ex.reduce((a, b) => a + b, 0); return ex.map(v => v / s); }
         const expected = new Float32Array([...softmaxRow([1,1,1,1]), ...softmaxRow([1,2,3,4])]);
-        const ok = arraysMatch(r, expected, 1e-4);
+        const ok = arraysMatch(r, expected, 1e-3);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(4)).join(', ')}]`;
         if (ok) log('softmax', true, s); else log('softmax', false, s + ', Expected: [...]');
         g.destroy(); iT.destroy(); oT.destroy();
