@@ -61,8 +61,8 @@
         const x = b.input('x', d);
         const y = b.input('y', d);
         const z = b.input('z', d);
-        const s = b.sub(x, y);
-        const o = b.mul(s, z);
+        const t = b.sub(x, y);
+        const o = b.mul(t, z);
         const g = await b.build({ o });
         const xT = await context.createTensor({ dataType: 'float32', shape: [4], writable: true, readable: false });
         const yT = await context.createTensor({ dataType: 'float32', shape: [4], writable: true, readable: false });

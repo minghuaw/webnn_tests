@@ -107,7 +107,7 @@
         const input = builder.input('input', inputDesc);
         const output = buildFn(builder, input);
         const graph = await builder.build({ output });
-        const iTensor = await context.createTensor({ dataType: 'uint8', shape: inputDesc.shape, writable: true, readable: false });
+        const iTensor = await context.createTensor({ dataType: inputDesc.dataType, shape: inputDesc.shape, writable: true, readable: false });
         const oTensor = await context.createTensor({ dataType: 'uint8', shape: output.shape, writable: false, readable: true });
         context.writeTensor(iTensor, inputValues);
         context.dispatch(graph, { input: iTensor }, { output: oTensor });

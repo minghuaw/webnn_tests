@@ -61,7 +61,7 @@
         const fD = { dataType: 'float32', shape: [1, 1, 3, 3] };
         const x = b.input('x', iD);
         const f = b.input('f', fD);
-        const p = b.pad(x, { padding: [1, 1, 1, 1], mode: 'constant' });
+        const p = b.pad(x, [0, 0, 1, 1], [0, 0, 1, 1]);
         const o = b.conv2d(p, f, { padding: [0, 0, 0, 0], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
         const g = await b.build({ o });
         const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });

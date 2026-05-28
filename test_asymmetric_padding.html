@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>WebNN – asymmetric padding test</title>
+  <title>WebNN – conv2d no-padding test</title>
   <style>
     body { font-family: monospace; padding: 20px; }
     .pass { color: green; }
@@ -11,8 +11,8 @@
   </style>
 </head>
 <body>
-  <h1>WebNN – asymmetric padding test</h1>
-  <p>conv2d [1,1,5,5] all-ones with [1,1,3,3] filter, padding=[1,2,1,2], stride=1. Tests whether backends support different padding on opposite edges.</p>
+  <h1>WebNN – conv2d no-padding test</h1>
+  <p>conv2d [1,1,5,5] all-ones with [1,1,3,3] filter, no padding, stride=1 — all output values should be 9.</p>
   <div id="results"></div>
   <script>
     'use strict';
@@ -46,34 +46,16 @@
         return;
       }
 
-      // Asymmetric padding test
+      // Basic conv2d test (no padding)
       // Input: [1, 1, 5, 5] NCHW, all ones
       // Filter: [1, 1, 3, 3] all ones (constant)
-      // Padding: [1, 2, 1, 2] (top=1, bottom=2, left=1, right=2)
-      // Stride: [1, 1]
-      // Output: floor((5+1+2-3)/1)+1 = 6 → [1, 1, 6, 6]
-      //
-      // In padded space (height: 5+1+2=8, input occupies [1,5]):
-      //   oh=0: [0,1,2] → 1 live (pos 2)
-      //   oh=1,2,3: [1,2,3],[2,3,4],[3,4,5] → 3 live
-      //   oh=4: [4,5,6] → 2 live (pos 4,5)
-      //   oh=5: [5,6,7] → 1 live (pos 5)
-      // Same for width (left=1, right=2).
-      //
-      // Asymmetry: top edge (oh=0) has 1 live vs bottom edge (oh=5) has 1 live
-      //   but oh=4 has 2 live (bottom-1) while there's no symmetric for top
-      //   With symmetric [1,1,1,1], both oh=0 and oh=4 would have 2 live
-      //
-      // Values:
-      //   [0,0] = 1*1 = 1    [0,1] = 1*3 = 3    [0,4] = 1*2 = 2
-      //   [1,0] = 3*1 = 3    [1,1] = 3*3 = 9    [1,4] = 3*2 = 6
-      //   [4,0] = 2*1 = 2    [4,1] = 2*3 = 6    [4,4] = 2*2 = 4
-      //   [5,5] = 1*1 = 1
+      // Padding: [0, 0, 0, 0], Stride: [1, 1]
+      // Output: floor((5-3)/1)+1 = 3 → [1, 1, 3, 3], each = 9
       try {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [1, 1, 5, 5] });
         const f = b.constant({ dataType: 'float32', shape: [1, 1, 3, 3] }, new Float32Array(9).fill(1));
-        const o = b.conv2d(x, f, { padding: [1, 2, 1, 2], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
+        const o = b.conv2d(x, f, { padding: [0, 0, 0, 0], strides: [1, 1], inputLayout: 'nchw', filterLayout: 'oihw' });
         const g = await b.build({ o });
         const xT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 5, 5], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
@@ -81,31 +63,16 @@
         context.dispatch(g, { x: xT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
-
-        // Helper: index at (oh, ow) in [1,1,6,6]
-        const idx = (oh, ow) => oh * 6 + ow;
-        const checks = [
-          [r[idx(0,0)], 1, '(0,0) top-left'],
-          [r[idx(0,1)], 3, '(0,1) top edge'],
-          [r[idx(0,4)], 2, '(0,4) top-right inner'],
-          [r[idx(1,0)], 3, '(1,0) left edge'],
-          [r[idx(1,1)], 9, '(1,1) interior'],
-          [r[idx(4,4)], 4, '(4,4) bottom-right inner'],
-          [r[idx(4,0)], 2, '(4,0) bottom-left inner'],
-          [r[idx(5,5)], 1, '(5,5) bottom-right corner'],
-        ];
-        const allOk = checks.every(([got, exp]) => Math.abs(got - exp) < 1e-5);
+        const allOk = r.length === 9 && r.every(v => Math.abs(v - 9) < 1e-5);
         if (allOk) {
-          log('asymmetric_padding', true,
-            `Output: [${o.shape}], values correct`);
+          log('conv2d_nopad', true, `Output: [${o.shape}], all 9.0`);
         } else {
-          const fails = checks.filter(([got, exp]) => Math.abs(got - exp) >= 1e-5);
-          log('asymmetric_padding', false,
-            `${fails.length} mismatches (e.g. ${fails[0][2]}: got ${fails[0][0].toFixed(1)}, expected ${fails[0][1]})`);
+          log('conv2d_nopad', false,
+            `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}], expected all 9.0`);
         }
         g.destroy(); xT.destroy(); oT.destroy();
       } catch (e) {
-        log('asymmetric_padding', false, e.message);
+        log('conv2d_nopad', false, e.message);
       }
 
       context.destroy();

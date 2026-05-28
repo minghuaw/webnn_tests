@@ -61,7 +61,7 @@
         const bD = { dataType: 'float32', shape: [3, 2] };
         const a = b.input('a', aD);
         const b_ = b.input('b', bD);
-        const sm = b.softmax(a, { axis: 1 });
+        const sm = b.softmax(a, 1);
         const o = b.matmul(sm, b_);
         const g = await b.build({ o });
         const aT = await context.createTensor({ dataType: 'float32', shape: aD.shape, writable: true, readable: false });

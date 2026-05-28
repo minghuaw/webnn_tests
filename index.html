@@ -8,6 +8,9 @@
   <h1>webnn tests</h1>
   <p>WebNN requires a secure context (HTTPS or localhost). Run via: <code>python -m http.server 8080</code></p>
 
+  <button onclick="(function(){ var links=document.querySelectorAll('ul a'); for(var i=0;i<links.length;i++){ (function(l){ setTimeout(function(){ window.open(l.href,'_blank'); }, i*80); })(links[i]); } })()">Open All Tests</button>
+  <button onclick="(function(){ var links=document.getElementById('dispatch').querySelectorAll('a'); for(var i=0;i<links.length;i++){ (function(l){ setTimeout(function(){ window.open(l.href,'_blank'); }, i*80); })(links[i]); } })()">Open Dispatch Tests</button>
+
   <h2>Unit Tests</h2>
   <ul>
     <li><a href="test_context.html">test_context.html</a> — 6 tests, MLContext creation/destruction</li>
@@ -18,7 +21,7 @@
   </ul>
 
   <h2>Dispatch Tests</h2>
-  <ul>
+  <ul id="dispatch">
     <li><a href="test_conv2d_3ch.html">test_conv2d_3ch.html</a> — conv2d with 3 input channels</li>
     <li><a href="test_transpose_conv2d.html">test_transpose_conv2d.html</a> — transpose (NHWC→NCHW) + conv2d</li>
     <li><a href="test_conv2d_transpose.html">test_conv2d_transpose.html</a> — conv2d (NCHW) + transpose (→NHWC)</li>

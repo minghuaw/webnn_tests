@@ -87,25 +87,21 @@
       await runWithContext('gatherElements', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [2, 2] });
-        const idx = b.input('idx', { dataType: 'int32', shape: [2, 2] });
+        const idx = b.constant({ dataType: 'int32', shape: [2, 2] }, new Int32Array([0, 0, 1, 0]));
         const o = b.gatherElements(x, idx, { axis: 1 });
         const g = await b.build({ o });
         const xT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: true, readable: false });
-        const iT = await context.createTensor({ dataType: 'int32', shape: [2, 2], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: false, readable: true });
         context.writeTensor(xT, new Float32Array([1, 2, 3, 4]));
-        context.writeTensor(iT, new Int32Array([0, 0, 1, 0]));
-        context.dispatch(g, { x: xT, idx: iT }, { o: oT });
+        context.dispatch(g, { x: xT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
-        // indices: [[0,0],[1,0]] → gather from x along axis=1: [[1,1],[4,3]] — wait, let me recalculate
-        // x[[0,0], [0,0]] = [1,1], x[[1,0], [1,0]]? No, the indices are 2D.
-        // Actually: for each position [i,j], gather index = idx[i][j], output = x[i][idx[i][j]]
-        // idx = [[0,0],[1,0]] → output = [[x[0][0]=1, x[0][0]=1], [x[1][1]=4, x[1][0]=3]]
+        // idx = [[0,0],[1,0]] → output[i][j] = x[i][idx[i][j]]
+        // → [[x[0][0]=1, x[0][0]=1], [x[1][1]=4, x[1][0]=3]]
         const exp = new Float32Array([1, 1, 4, 3]);
         log('gatherElements', arraysMatch(r, exp, 1e-5),
           `Got: [${Array.from(r).join(', ')}]`);
-        g.destroy(); xT.destroy(); iT.destroy(); oT.destroy();
+        g.destroy(); xT.destroy(); oT.destroy();
       });
 
       // 3  gatherND
@@ -134,22 +130,20 @@
       await runWithContext('scatterElements', async (context) => {
         const b = new MLGraphBuilder(context);
         const x = b.input('x', { dataType: 'float32', shape: [2, 2] });
-        const idx = b.input('idx', { dataType: 'int32', shape: [2, 2] });
+        const idx = b.constant({ dataType: 'int32', shape: [2, 2] }, new Int32Array([0, 0, 1, 0]));
         const upd = b.input('upd', { dataType: 'float32', shape: [2, 2] });
         const o = b.scatterElements(x, idx, upd, { axis: 0 });
         const g = await b.build({ o });
         const xT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: true, readable: false });
-        const iT = await context.createTensor({ dataType: 'int32', shape: [2, 2], writable: true, readable: false });
         const uT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: false, readable: true });
         context.writeTensor(xT, new Float32Array([1, 2, 3, 4]));
-        context.writeTensor(iT, new Int32Array([0, 0, 1, 0]));
         context.writeTensor(uT, new Float32Array([10, 20, 30, 40]));
-        context.dispatch(g, { x: xT, idx: iT, upd: uT }, { o: oT });
+        context.dispatch(g, { x: xT, upd: uT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
         log('scatterElements', r.length === 4, `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`);
-        g.destroy(); xT.destroy(); iT.destroy(); uT.destroy(); oT.destroy();
+        g.destroy(); xT.destroy(); uT.destroy(); oT.destroy();
       });
 
       // 5  scatterND

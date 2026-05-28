@@ -59,8 +59,8 @@
         const b = new MLGraphBuilder(context);
         const d = { dataType: 'float32', shape: [3, 4] };
         const x = b.input('x', d);
-        const s = b.slice(x, { starts: [0, 0], sizes: [2, 3] });
-        const o = b.reshape(s, [6]);
+        const t = b.slice(x, [0, 0], [2, 3]);
+        const o = b.reshape(t, [6]);
         const g = await b.build({ o });
         const iT = await context.createTensor({ dataType: 'float32', shape: [3, 4], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
@@ -68,7 +68,7 @@
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
-        const exp = new Float32Array([1,2,3,4,5,6]);
+        const exp = new Float32Array([1,2,3,5,6,7]);
         const ok = arraysMatch(r, exp, 1e-5);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`;
         if (ok) log('slice_reshape', true, s); else log('slice_reshape', false, `${s}, Expected: [1, 2, 3, 4, 5, 6]`);
