@@ -22,34 +22,28 @@
 
   <h2>Dispatch Tests</h2>
   <ul id="dispatch">
-    <li><a href="test_conv2d_3ch.html">test_conv2d_3ch.html</a> — conv2d with 3 input channels</li>
-    <li><a href="test_transpose_conv2d.html">test_transpose_conv2d.html</a> — transpose (NHWC→NCHW) + conv2d</li>
-    <li><a href="test_conv2d_transpose.html">test_conv2d_transpose.html</a> — conv2d (NCHW) + transpose (→NHWC)</li>
-    <li><a href="test_add_conv2d.html">test_add_conv2d.html</a> — add + conv2d</li>
-    <li><a href="test_transpose_matmul.html">test_transpose_matmul.html</a> — transpose + matmul</li>
-    <li><a href="test_matmul_conv2d.html">test_matmul_conv2d.html</a> — matmul + reshape + conv2d</li>
-    <li><a href="test_transpose_reshape_conv2d.html">test_transpose_reshape_conv2d.html</a> — transpose + identity reshape + conv2d</li>
-    <li><a href="test_conv2d_add.html">test_conv2d_add.html</a> — conv2d + add (residual)</li>
-    <li><a href="test_conv2d_add_relu.html">test_conv2d_add_relu.html</a> — conv2d + add + relu (residual block)</li>
-    <li><a href="test_relu_conv2d.html">test_relu_conv2d.html</a> — relu + conv2d</li>
-    <li><a href="test_depthwise_conv2d.html">test_depthwise_conv2d.html</a> — depthwise conv2d (groups=24, padding=1)</li>
-    <li><a href="test_conv2d_relu_depthwise.html">test_conv2d_relu_depthwise.html</a> — conv2d + relu + depthwise conv2d</li>
-    <li><a href="test_conv2d_relu_reshape.html">test_conv2d_relu_reshape.html</a> — conv2d + relu + reshape</li>
-    <li><a href="test_transpose_identity_conv2d.html">test_transpose_identity_conv2d.html</a> — transpose + identity + conv2d</li>
-    <li><a href="test_conv2d_relu_reshape_depthwise.html">test_conv2d_relu_reshape_depthwise.html</a> — conv2d + relu + reshape + depthwise conv2d</li>
-    <li><a href="test_transpose_reshape_conv2d_relu_reshape_depthwise.html">test_transpose_reshape_conv2d_relu_reshape_depthwise.html</a> — transpose + reshape + conv2d + relu + reshape + depthwise</li>
-    <li><a href="test_transpose_reshape_conv2d_relu_reshape_depthwise_asymmetric.html">test_transpose_reshape_conv2d_relu_reshape_depthwise_asymmetric.html</a> — same with asymmetric padding [1,2,1,2]</li>
-    <li><a href="test_asymmetric_padding.html">test_asymmetric_padding.html</a> — conv2d with padding=[1,2,1,2] to verify backend support</li>
-    <li><a href="test_custom_graph.html">test_custom_graph.html</a> — custom graph (transpose + conv2d + relu + depthwise)</li>
-    <li><a href="test_dispatch_constants.html">test_dispatch_constants.html</a> — 15 ops with constant operands (weights, indices, params)</li>
+
+    <li><a href="test_dispatch_constants.html">test_dispatch_constants.html</a> — 15 ops with constant operands</li>
     <li><a href="test_dispatch_elementwise.html">test_dispatch_elementwise.html</a> — 34 element-wise ops</li>
     <li><a href="test_dispatch_reduction.html">test_dispatch_reduction.html</a> — 10 reduction ops</li>
     <li><a href="test_dispatch_activations.html">test_dispatch_activations.html</a> — 17 activation/NN ops</li>
     <li><a href="test_dispatch_nn_layers.html">test_dispatch_nn_layers.html</a> — 10 pooling/conv/norm/quantize ops</li>
     <li><a href="test_dispatch_tensor_manip.html">test_dispatch_tensor_manip.html</a> — 15 tensor manipulation ops</li>
     <li><a href="test_dispatch_advanced.html">test_dispatch_advanced.html</a> — 5 gather/scatter + 4 RNN placeholders</li>
-    <li><a href="test_relu_sigmoid.html">test_relu_sigmoid.html</a> — relu + sigmoid activation chain</li>
-    <li><a href="test_gelu_sigmoid.html">test_gelu_sigmoid.html</a> — gelu + sigmoid activation chain</li>
+
+    <li><a href="test_conv2d_3ch.html">test_conv2d_3ch.html</a> — conv2d with 3 input channels</li>
+    <li><a href="test_depthwise_conv2d.html">test_depthwise_conv2d.html</a> — depthwise conv2d (groups=24)</li>
+    <li><a href="test_asymmetric_padding.html">test_asymmetric_padding.html</a> — conv2d no-padding validation</li>
+
+    <li><a href="test_relu_conv2d.html">test_relu_conv2d.html</a> — relu + conv2d</li>
+    <li><a href="test_add_conv2d.html">test_add_conv2d.html</a> — add + conv2d</li>
+    <li><a href="test_transpose_conv2d.html">test_transpose_conv2d.html</a> — transpose (NHWC→NCHW) + conv2d</li>
+    <li><a href="test_conv2d_transpose.html">test_conv2d_transpose.html</a> — conv2d (NCHW) + transpose (→NHWC)</li>
+    <li><a href="test_transpose_matmul.html">test_transpose_matmul.html</a> — transpose + matmul</li>
+    <li><a href="test_conv2d_add.html">test_conv2d_add.html</a> — conv2d + add (residual)</li>
+    <li><a href="test_transpose_identity_conv2d.html">test_transpose_identity_conv2d.html</a> — transpose + identity + conv2d</li>
+    <li><a href="test_relu_sigmoid.html">test_relu_sigmoid.html</a> — relu + sigmoid</li>
+    <li><a href="test_gelu_sigmoid.html">test_gelu_sigmoid.html</a> — gelu + sigmoid</li>
     <li><a href="test_relu_maxPool2d.html">test_relu_maxPool2d.html</a> — relu + maxPool2d</li>
     <li><a href="test_sigmoid_maxPool2d.html">test_sigmoid_maxPool2d.html</a> — sigmoid + maxPool2d</li>
     <li><a href="test_batchNorm_relu.html">test_batchNorm_relu.html</a> — batchNormalization + relu</li>
@@ -60,17 +54,29 @@
     <li><a href="test_pad_relu.html">test_pad_relu.html</a> — pad + relu</li>
     <li><a href="test_pad_conv2d.html">test_pad_conv2d.html</a> — pad + conv2d</li>
     <li><a href="test_concat_conv2d.html">test_concat_conv2d.html</a> — concat + conv2d</li>
-    <li><a href="test_split_concat.html">test_split_concat.html</a> — split + concat (identity round-trip)</li>
+    <li><a href="test_split_concat.html">test_split_concat.html</a> — split + concat</li>
     <li><a href="test_slice_reshape.html">test_slice_reshape.html</a> — slice + reshape</li>
     <li><a href="test_reshape_matmul.html">test_reshape_matmul.html</a> — reshape + matmul</li>
     <li><a href="test_reshape_gemm.html">test_reshape_gemm.html</a> — reshape + gemm</li>
     <li><a href="test_softmax_mul.html">test_softmax_mul.html</a> — softmax + mul</li>
     <li><a href="test_softmax_matmul.html">test_softmax_matmul.html</a> — softmax + matmul</li>
-    <li><a href="test_mul_div.html">test_mul_div.html</a> — mul + div element-wise chain</li>
-    <li><a href="test_sub_mul.html">test_sub_mul.html</a> — sub + mul element-wise chain</li>
-    <li><a href="test_div_sub.html">test_div_sub.html</a> — div + sub element-wise chain</li>
+    <li><a href="test_mul_div.html">test_mul_div.html</a> — mul + div</li>
+    <li><a href="test_sub_mul.html">test_sub_mul.html</a> — sub + mul</li>
+    <li><a href="test_div_sub.html">test_div_sub.html</a> — div + sub</li>
     <li><a href="test_resample2d_relu.html">test_resample2d_relu.html</a> — resample2d + relu</li>
     <li><a href="test_dequantizeLinear_relu.html">test_dequantizeLinear_relu.html</a> — dequantizeLinear + relu</li>
+
+    <li><a href="test_conv2d_add_relu.html">test_conv2d_add_relu.html</a> — conv2d + add + relu</li>
+    <li><a href="test_conv2d_relu_reshape.html">test_conv2d_relu_reshape.html</a> — conv2d + relu + reshape</li>
+    <li><a href="test_matmul_conv2d.html">test_matmul_conv2d.html</a> — matmul + reshape + conv2d</li>
+    <li><a href="test_transpose_reshape_conv2d.html">test_transpose_reshape_conv2d.html</a> — transpose + reshape + conv2d</li>
+    <li><a href="test_conv2d_relu_depthwise.html">test_conv2d_relu_depthwise.html</a> — conv2d + relu + depthwise conv2d</li>
+
+    <li><a href="test_conv2d_relu_reshape_depthwise.html">test_conv2d_relu_reshape_depthwise.html</a> — conv2d + relu + reshape + depthwise conv2d</li>
+    <li><a href="test_transpose_reshape_conv2d_relu_reshape_depthwise.html">test_transpose_reshape_conv2d_relu_reshape_depthwise.html</a> — transpose + reshape + conv2d + relu + reshape + depthwise</li>
+    <li><a href="test_transpose_reshape_conv2d_relu_reshape_depthwise_asymmetric.html">test_transpose_reshape_conv2d_relu_reshape_depthwise_asymmetric.html</a> — same with asymmetric padding</li>
+    <li><a href="test_custom_graph.html">test_custom_graph.html</a> — custom graph (transpose + conv2d + relu + depthwise)</li>
+
   </ul>
 
   <h2>Prototype Tests</h2>
