@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WebNN Dispatch – reshape + gemm</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    .pass { color: green; }
+    .fail { color: red; }
+    .result { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>WebNN Dispatch – reshape + gemm</h1>
+  <p>reshape [6] vector [1..6] to [2,3], then gemm (no alpha/beta/C) with [3,2] ones matrix. Same result as matmul. Expected: [6,6,15,15].</p>
+  <div id="results"></div>
+  <script>
+    'use strict';
+
+    const results = document.getElementById('results');
+    let passed = 0;
+    let failed = 0;
+
+    function log(name, passed_, info) {
+      const div = document.createElement('div');
+      div.className = 'result ' + (passed_ ? 'pass' : 'fail');
+      let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
+      if (info) text += ' - ' + info;
+      div.textContent = text;
+      results.appendChild(div);
+      if (passed_) passed++; else failed++;
+    }
+
+    function arraysMatch(a, b, tol) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (tol === 0) { if (a[i] !== b[i]) return false; }
+        else { if (Math.abs(a[i] - b[i]) > tol) return false; }
+      }
+      return true;
+    }
+
+    async function runTests() {
+      if (!navigator.ml) { log('WebNN API not available', false); showSummary(); return; }
+      log('WebNN API available', true);
+      if (!window.isSecureContext) { log('Not in secure context', false); showSummary(); return; }
+      log('Secure context OK', true);
+
+      let context;
+      try {
+        context = await navigator.ml.createContext({});
+      } catch (e) {
+        log('createContext', false, e.message);
+        showSummary();
+        return;
+      }
+
+      try {
+        const b = new MLGraphBuilder(context);
+        const aD = { dataType: 'float32', shape: [6] };
+        const bD = { dataType: 'float32', shape: [3, 2] };
+        const a = b.input('a', aD);
+        const b_ = b.input('b', bD);
+        const r = b.reshape(a, [2, 3]);
+        const o = b.gemm(r, b_);
+        const g = await b.build({ o });
+        const aT = await context.createTensor({ dataType: 'float32', shape: aD.shape, writable: true, readable: false });
+        const bT = await context.createTensor({ dataType: 'float32', shape: bD.shape, writable: true, readable: false });
+        const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
+        context.writeTensor(aT, new Float32Array([1,2,3,4,5,6]));
+        context.writeTensor(bT, new Float32Array(6).fill(1));
+        context.dispatch(g, { a: aT, b: bT }, { o: oT });
+        const buf = await context.readTensor(oT);
+        const r_ = new Float32Array(buf);
+        const exp = new Float32Array([6,6,15,15]);
+        const ok = arraysMatch(r_, exp, 1e-5);
+        const s = `Got: [${Array.from(r_).map(v => v.toFixed(1)).join(', ')}]`;
+        if (ok) log('reshape_gemm', true, s); else log('reshape_gemm', false, `${s}, Expected: [6, 6, 15, 15]`);
+        g.destroy(); aT.destroy(); bT.destroy(); oT.destroy();
+      } catch (e) {
+        log('reshape_gemm', false, e.message);
+      }
+
+      context.destroy();
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.createElement('div');
+      summary.style.marginTop = '20px';
+      summary.style.fontWeight = 'bold';
+      summary.textContent = 'Results: ' + passed + ' passed, ' + failed + ' failed';
+      if (failed > 0 && !window.isSecureContext) {
+        const note = document.createElement('div');
+        note.style.color = 'orange';
+        note.style.marginTop = '10px';
+        note.textContent = 'Note: WebNN requires a secure context (HTTPS or localhost).';
+        results.appendChild(note);
+      }
+      results.appendChild(summary);
+    }
+
+    runTests();
+  </script>
+</body>
+</html>
