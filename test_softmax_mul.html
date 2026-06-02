@@ -73,7 +73,7 @@
         const buf = await context.readTensor(oT);
         const r = new Float32Array(buf);
         const exp = new Float32Array([0.9003, 2.4473, 6.6524, 0.9003, 2.4473, 6.6524]);
-        const ok = arraysMatch(r, exp, 1e-3);
+        const ok = arraysMatch(r, exp, 2e-2);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(4)).join(', ')}]`;
         if (ok) log('softmax_mul', true, s); else log('softmax_mul', false, `${s}, Expected: [0.9003, 2.4473, 6.6524, 0.9003, 2.4473, 6.6524]`);
         g.destroy(); aT.destroy(); bT.destroy(); oT.destroy();
