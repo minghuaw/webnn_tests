@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ` (${timing.toFixed(2)}ms)`;
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -116,8 +117,10 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(iT, nhwcInput);
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const actual = new Float32Array(buf);
 
         const tol = 1e-5;
@@ -134,7 +137,7 @@
         }
         const shapeOk = o.shape.length === 4 && o.shape[1] === COUT && o.shape[2] === HOUT && o.shape[3] === WOUT;
         log('transpose+conv2d', allMatch && shapeOk,
-          `Shape: [${o.shape}], expected first 3: [${expVals.slice(0,3).map(v=>v.toFixed(1)).join(', ')}], got: [${actualVals.slice(0,3).map(v=>v.toFixed(1)).join(', ')}]`);
+          `Shape: [${o.shape}], expected first 3: [${expVals.slice(0,3).map(v=>v.toFixed(1)).join(', ')}], got: [${actualVals.slice(0,3).map(v=>v.toFixed(1)).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       } catch (e) {
         log('transpose+conv2d', false, e.message);

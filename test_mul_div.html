@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ' (' + timing.toFixed(2) + 'ms)';
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -71,13 +72,15 @@
         context.writeTensor(xT, new Float32Array([1,2,3,4]));
         context.writeTensor(yT, new Float32Array([10,10,10,10]));
         context.writeTensor(zT, new Float32Array([2,4,5,8]));
+        const t0 = performance.now();
         context.dispatch(g, { x: xT, y: yT, z: zT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         const exp = new Float32Array([5,5,6,5]);
         const ok = arraysMatch(r, exp, 1e-5);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`;
-        if (ok) log('mul_div', true, s); else log('mul_div', false, `${s}, Expected: [5, 5, 6, 5]`);
+        if (ok) log('mul_div', true, s, timing); else log('mul_div', false, `${s}, Expected: [5, 5, 6, 5]`, timing);
         g.destroy(); xT.destroy(); yT.destroy(); zT.destroy(); oT.destroy();
       } catch (e) {
         log('mul_div', false, e.message);

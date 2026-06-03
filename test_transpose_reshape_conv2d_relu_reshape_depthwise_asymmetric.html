@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ` (${timing.toFixed(2)}ms)`;
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -76,8 +77,10 @@
         const xT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(xT, new Float32Array(1 * 128 * 128 * 3).fill(1));
+        const t0 = performance.now();
         context.dispatch(g, { x: xT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r_ = new Float32Array(buf);
         const S = o.shape[2]; // 33
         const centerIdx = 0 * S * S + 16 * S + 16;
@@ -88,9 +91,9 @@
         const centerOk = Math.abs(r_[centerIdx] - centerExp) < 1e-5;
         const cornerOk = Math.abs(r_[cornerIdx] - cornerExp) < 1e-5;
         log('asym_chain_center', centerOk,
-          `Ch0 center[16,16]: ${r_[centerIdx].toFixed(1)}, expected ${centerExp}`);
+          `Ch0 center[16,16]: ${r_[centerIdx].toFixed(1)}, expected ${centerExp}`, timing);
         log('asym_chain_corner', cornerOk,
-          `Ch0 corner[0,0]: ${r_[cornerIdx].toFixed(1)}, expected ${cornerExp} (symmetric would be 62)`);
+          `Ch0 corner[0,0]: ${r_[cornerIdx].toFixed(1)}, expected ${cornerExp} (symmetric would be 62)`, timing);
         g.destroy(); xT.destroy(); oT.destroy();
       } catch (e) {
         log('asym_chain', false, e.message);

@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ` (${timing.toFixed(2)}ms)`;
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -65,14 +66,16 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(iT, new Float32Array(1 * 128 * 128 * 3).fill(1));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r_ = new Float32Array(buf);
         const exp = 75; // 3 input channels * 5*5 kernel
         const firstFew = Array.from(r_.slice(0, 5)).map(v => v.toFixed(1));
         const allMatch = r_.every(v => Math.abs(v - exp) < 1e-5);
         log('transpose+reshape+conv2d', allMatch,
-          `Output shape: [${o.shape}], first 5: [${firstFew.join(', ')}], expected each: ${exp}`);
+          `Output shape: [${o.shape}], first 5: [${firstFew.join(', ')}], expected each: ${exp}`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       } catch (e) {
         log('transpose+reshape+conv2d', false, e.message);

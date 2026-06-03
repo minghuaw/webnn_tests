@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ` (${timing.toFixed(2)}ms)`;
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -76,15 +77,17 @@
         const xT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(xT, new Float32Array(1 * 128 * 128 * 3).fill(1));
+        const t0 = performance.now();
         context.dispatch(g, { x: xT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r_ = new Float32Array(buf);
         const centerIdx = 0 * 22 * 22 + 11 * 22 + 11;
         const exp = 262; // (27+1)*9 + 10
         const shapeOk = o.shape.length === 4 && o.shape[0] === 1 && o.shape[1] === 4 && o.shape[2] === 22 && o.shape[3] === 22;
         const centerOk = Math.abs(r_[centerIdx] - exp) < 1e-5;
         log('transpose+reshape+conv2d+relu+reshape+depthwise', shapeOk && centerOk,
-          `Output shape: [${o.shape}], ch0 center: ${r_[centerIdx].toFixed(1)}, expected: ${exp}`);
+          `Output shape: [${o.shape}], ch0 center: ${r_[centerIdx].toFixed(1)}, expected: ${exp}`, timing);
         g.destroy(); xT.destroy(); oT.destroy();
       } catch (e) {
         log('transpose+reshape+conv2d+relu+reshape+depthwise', false, e.message);

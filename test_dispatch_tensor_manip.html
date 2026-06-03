@@ -20,11 +20,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ' (' + timing.toFixed(2) + 'ms)';
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -72,11 +73,13 @@
         context.writeTensor(t1, new Float32Array([1, 2, 3]));
         context.writeTensor(t2, new Float32Array([4, 5, 6]));
         context.writeTensor(t3, new Float32Array([7, 8, 9]));
+        const t0 = performance.now();
         context.dispatch(g, { a1: t1, a2: t2, a3: t3 }, { o: to });
         const buf = await context.readTensor(to);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('concat', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); t1.destroy(); t2.destroy(); t3.destroy(); to.destroy();
       });
 
@@ -90,11 +93,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [1, 3], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [2, 3], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([10, 20, 30]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('expand', arraysMatch(r, new Float32Array([10, 20, 30, 10, 20, 30]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -108,11 +113,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [2, 3], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [6], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('reshape', arraysMatch(r, new Float32Array([1, 2, 3, 4, 5, 6]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -126,11 +133,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [3], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [3], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('reverse', arraysMatch(r, new Float32Array([3, 2, 1]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -144,11 +153,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [5], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [3], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('slice', arraysMatch(r, new Float32Array([2, 3, 4]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -166,13 +177,15 @@
         const t1 = await context.createTensor({ dataType: 'float32', shape: [2], writable: false, readable: true });
         const t2 = await context.createTensor({ dataType: 'float32', shape: [2], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6]));
+        const t0_ = performance.now();
         context.dispatch(g, { x: iT }, { o0: t0, o1: t1, o2: t2 });
         const b0 = await context.readTensor(t0);
         const b1 = await context.readTensor(t1);
         const b2 = await context.readTensor(t2);
+        const timing = performance.now() - t0_;
         const r0 = new Float32Array(b0); const r1 = new Float32Array(b1); const r2 = new Float32Array(b2);
         log('split', arraysMatch(r0, [1, 2], 1e-5) && arraysMatch(r1, [3, 4], 1e-5) && arraysMatch(r2, [5, 6], 1e-5),
-          `Chunks: [${Array.from(r0).join(', ')}], [${Array.from(r1).join(', ')}], [${Array.from(r2).join(', ')}]`);
+          `Chunks: [${Array.from(r0).join(', ')}], [${Array.from(r1).join(', ')}], [${Array.from(r2).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); t0.destroy(); t1.destroy(); t2.destroy();
       });
 
@@ -186,11 +199,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [3], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [6], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('tile', arraysMatch(r, new Float32Array([1, 2, 3, 1, 2, 3]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -204,11 +219,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('transpose', arraysMatch(r, new Float32Array([1, 3, 2, 4]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -222,11 +239,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [3, 3], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [3, 3], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('triangular (upper)', arraysMatch(r, new Float32Array([1, 2, 3, 0, 5, 6, 0, 0, 9]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -240,11 +259,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [4, 4], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('pad', arraysMatch(r, new Float32Array([0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 0]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -258,11 +279,13 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [4], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'int32', shape: [4], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1.5, 2.7, -3.2, 4.0]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Int32Array(buf);
         log('cast (float32→int32)', arraysMatch(r, new Int32Array([1, 2, -3, 4]), 0),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 
@@ -282,11 +305,13 @@
         context.writeTensor(cT, new Uint8Array([1, 0, 1]));
         context.writeTensor(tT, new Float32Array([10, 20, 30]));
         context.writeTensor(fT, new Float32Array([40, 50, 60]));
+        const t0 = performance.now();
         context.dispatch(g, { cond: cT, t: tT, f: fT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('where', arraysMatch(r, new Float32Array([10, 50, 30]), 1e-5),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); cT.destroy(); tT.destroy(); fT.destroy(); oT.destroy();
       });
 
@@ -303,11 +328,13 @@
         const oT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: false, readable: true });
         context.writeTensor(aT, new Float32Array([1, 2, 3, 4]));
         context.writeTensor(cT, new Float32Array([5, 6, 7, 8]));
+        const t0 = performance.now();
         context.dispatch(g, { a: aT, c: cT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('matmul', arraysMatch(r, new Float32Array([19, 22, 43, 50]), 1e-4),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); aT.destroy(); cT.destroy(); oT.destroy();
       });
 
@@ -324,11 +351,13 @@
         const oT = await context.createTensor({ dataType: 'float32', shape: [2, 2], writable: false, readable: true });
         context.writeTensor(aT, new Float32Array([1, 2, 3, 4]));
         context.writeTensor(bT, new Float32Array([5, 6, 7, 8]));
+        const t0 = performance.now();
         context.dispatch(g, { a: aT, b: bT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         log('gemm', arraysMatch(r, new Float32Array([19, 22, 43, 50]), 1e-4),
-          `Got: [${Array.from(r).join(', ')}]`);
+          `Got: [${Array.from(r).join(', ')}]`, timing);
         g.destroy(); aT.destroy(); bT.destroy(); oT.destroy();
       });
 
@@ -342,13 +371,15 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 2, 2], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 4, 4], writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1, 2, 3, 4]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         const exp = new Float32Array([1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4]);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}], shape: [${o.shape}]`;
-        if (arraysMatch(r, exp, 1e-5)) log('resample2d', true, s);
-        else log('resample2d', false, `${s}, Expected: [1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4]`);
+        if (arraysMatch(r, exp, 1e-5)) log('resample2d', true, s, timing);
+        else log('resample2d', false, `${s}, Expected: [1, 1, 2, 2, 1, 1, 2, 2, 3, 3, 4, 4, 3, 3, 4, 4]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       });
 

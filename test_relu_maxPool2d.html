@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ' (' + timing.toFixed(2) + 'ms)';
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -65,13 +66,15 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [1, 1, 4, 4], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([-1,2,-3,4, -5,6,-7,8, -9,10,-11,12, -13,14,-15,16]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r_ = new Float32Array(buf);
         const exp = new Float32Array([6, 8, 14, 16]);
         const ok = arraysMatch(r_, exp, 1e-5);
         const s = `Got: [${Array.from(r_).map(v => v.toFixed(1)).join(', ')}]`;
-        if (ok) log('relu_maxPool2d', true, s); else log('relu_maxPool2d', false, `${s}, Expected: [6, 8, 14, 16]`);
+        if (ok) log('relu_maxPool2d', true, s, timing); else log('relu_maxPool2d', false, `${s}, Expected: [6, 8, 14, 16]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       } catch (e) {
         log('relu_maxPool2d', false, e.message);

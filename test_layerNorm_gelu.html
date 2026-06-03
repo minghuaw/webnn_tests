@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ' (' + timing.toFixed(2) + 'ms)';
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -65,12 +66,14 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: iD.shape, writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1,2,3,4,5,6,7,8]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         const allFinite = Array.from(r).every(v => isFinite(v));
         const s = `Got: [${Array.from(r).map(v => v.toFixed(4)).join(', ')}], shape: [${o.shape}]`;
-        if (allFinite && r.length === 8) log('layerNorm_gelu', true, s); else log('layerNorm_gelu', false, s);
+        if (allFinite && r.length === 8) log('layerNorm_gelu', true, s, timing); else log('layerNorm_gelu', false, s, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       } catch (e) {
         log('layerNorm_gelu', false, e.message);

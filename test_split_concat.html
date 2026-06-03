@@ -21,11 +21,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ' (' + timing.toFixed(2) + 'ms)';
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -65,13 +66,15 @@
         const iT = await context.createTensor({ dataType: 'float32', shape: [4, 3], writable: true, readable: false });
         const oT = await context.createTensor({ dataType: 'float32', shape: o.shape, writable: false, readable: true });
         context.writeTensor(iT, new Float32Array([1,2,3,4,5,6,7,8,9,10,11,12]));
+        const t0 = performance.now();
         context.dispatch(g, { x: iT }, { o: oT });
         const buf = await context.readTensor(oT);
+        const timing = performance.now() - t0;
         const r = new Float32Array(buf);
         const exp = new Float32Array([1,2,3,4,5,6,7,8,9,10,11,12]);
         const ok = arraysMatch(r, exp, 1e-5);
         const s = `Got: [${Array.from(r).map(v => v.toFixed(1)).join(', ')}]`;
-        if (ok) log('split_concat', true, s); else log('split_concat', false, `${s}, Expected: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]`);
+        if (ok) log('split_concat', true, s, timing); else log('split_concat', false, `${s}, Expected: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]`, timing);
         g.destroy(); iT.destroy(); oT.destroy();
       } catch (e) {
         log('split_concat', false, e.message);

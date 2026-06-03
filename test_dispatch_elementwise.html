@@ -20,11 +20,12 @@
     let passed = 0;
     let failed = 0;
 
-    function log(name, passed_, info) {
+    function log(name, passed_, info, timing) {
       const div = document.createElement('div');
       div.className = 'result ' + (passed_ ? 'pass' : 'fail');
       let text = (passed_ ? 'PASS' : 'FAIL') + ': ' + name;
       if (info) text += ' - ' + info;
+      if (timing !== undefined) text += ' (' + timing.toFixed(2) + 'ms)';
       div.textContent = text;
       results.appendChild(div);
       if (passed_) passed++; else failed++;
@@ -55,13 +56,15 @@
         const iTensor = await context.createTensor({ dataType: 'float32', shape: inputDesc.shape, writable: true, readable: false });
         const oTensor = await context.createTensor({ dataType: 'float32', shape: output.shape, writable: false, readable: true });
         context.writeTensor(iTensor, inputValues);
+        const t0 = performance.now();
         context.dispatch(graph, { input: iTensor }, { output: oTensor });
         const buf = await context.readTensor(oTensor);
+        const timing = performance.now() - t0;
         const results = new Float32Array(buf);
         const ok = arraysMatch(results, expectedValues, tolerance);
         const s = `Got: [${Array.from(results).map(v => v.toFixed(4)).join(', ')}]`;
-        if (ok) { log(opName, true, s); } else {
-          log(opName, false, `${s}, Expected: [${Array.from(expectedValues).map(v => v.toFixed(4)).join(', ')}]`);
+        if (ok) { log(opName, true, s, timing); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expectedValues).map(v => v.toFixed(4)).join(', ')}]`, timing);
         }
         graph.destroy(); iTensor.destroy(); oTensor.destroy();
         context.destroy();
@@ -83,13 +86,15 @@
         const tB = await context.createTensor({ dataType: 'float32', shape: dB.shape, writable: true, readable: false });
         const tO = await context.createTensor({ dataType: 'float32', shape: output.shape, writable: false, readable: true });
         context.writeTensor(tA, aV); context.writeTensor(tB, bV);
+        const t0 = performance.now();
         context.dispatch(graph, { a: tA, b: tB }, { output: tO });
         const buf = await context.readTensor(tO);
+        const timing = performance.now() - t0;
         const results = new Float32Array(buf);
         const ok = arraysMatch(results, expected, tolerance);
         const s = `Got: [${Array.from(results).map(v => v.toFixed(4)).join(', ')}]`;
-        if (ok) { log(opName, true, s); } else {
-          log(opName, false, `${s}, Expected: [${Array.from(expected).map(v => v.toFixed(4)).join(', ')}]`);
+        if (ok) { log(opName, true, s, timing); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expected).map(v => v.toFixed(4)).join(', ')}]`, timing);
         }
         graph.destroy(); tA.destroy(); tB.destroy(); tO.destroy();
         context.destroy();
@@ -110,13 +115,15 @@
         const iTensor = await context.createTensor({ dataType: inputDesc.dataType, shape: inputDesc.shape, writable: true, readable: false });
         const oTensor = await context.createTensor({ dataType: 'uint8', shape: output.shape, writable: false, readable: true });
         context.writeTensor(iTensor, inputValues);
+        const t0 = performance.now();
         context.dispatch(graph, { input: iTensor }, { output: oTensor });
         const buf = await context.readTensor(oTensor);
+        const timing = performance.now() - t0;
         const results = new Uint8Array(buf);
         const ok = arraysMatch(results, expectedValues, 0);
         const s = `Got: [${Array.from(results).join(', ')}]`;
-        if (ok) { log(opName, true, s); } else {
-          log(opName, false, `${s}, Expected: [${Array.from(expectedValues).join(', ')}]`);
+        if (ok) { log(opName, true, s, timing); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expectedValues).join(', ')}]`, timing);
         }
         graph.destroy(); iTensor.destroy(); oTensor.destroy();
         context.destroy();
@@ -138,13 +145,15 @@
         const tB = await context.createTensor({ dataType: dB.dataType, shape: dB.shape, writable: true, readable: false });
         const tO = await context.createTensor({ dataType: 'uint8', shape: output.shape, writable: false, readable: true });
         context.writeTensor(tA, aV); context.writeTensor(tB, bV);
+        const t0 = performance.now();
         context.dispatch(graph, { a: tA, b: tB }, { output: tO });
         const buf = await context.readTensor(tO);
+        const timing = performance.now() - t0;
         const results = new Uint8Array(buf);
         const ok = arraysMatch(results, expected, 0);
         const s = `Got: [${Array.from(results).join(', ')}]`;
-        if (ok) { log(opName, true, s); } else {
-          log(opName, false, `${s}, Expected: [${Array.from(expected).join(', ')}]`);
+        if (ok) { log(opName, true, s, timing); } else {
+          log(opName, false, `${s}, Expected: [${Array.from(expected).join(', ')}]`, timing);
         }
         graph.destroy(); tA.destroy(); tB.destroy(); tO.destroy();
         context.destroy();
