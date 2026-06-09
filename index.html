@@ -10,6 +10,59 @@
 
   <button onclick="(function(){ var links=document.querySelectorAll('ul a'); for(var i=0;i<links.length;i++){ (function(l){ setTimeout(function(){ window.open(l.href,'_blank'); }, i*80); })(links[i]); } })()">Open All Tests</button>
   <button onclick="(function(){ var links=document.getElementById('dispatch').querySelectorAll('a'); for(var i=0;i<links.length;i++){ (function(l){ setTimeout(function(){ window.open(l.href,'_blank'); }, i*80); })(links[i]); } })()">Open Dispatch Tests</button>
+  <button onclick="runInline()">▶ Run All Inline</button>
+  <span id="inlineStatus"></span>
+  <style>
+    .badge { display:inline-block; padding:1px 5px; margin-left:6px; font-size:11px; border-radius:3px; font-weight:bold; }
+    .badge.pass { background:#4caf50; color:#fff; }
+    .badge.fail { background:#f44336; color:#fff; }
+    .badge.pending { background:#ff9800; color:#fff; }
+    .badge.skip { background:#9e9e9e; color:#fff; }
+    iframe.collect { position:absolute; left:-9999px; width:1px; height:1px; }
+  </style>
+  <script>
+    function runInline() {
+      var links = document.querySelectorAll('ul a');
+      var status = document.getElementById('inlineStatus');
+      status.textContent = 'Running 0/' + links.length + '...';
+      var completed = 0;
+      links.forEach(function(a, idx) {
+        var badge = document.createElement('span');
+        badge.className = 'badge pending';
+        badge.textContent = '...';
+        a.parentNode.insertBefore(badge, a.nextSibling);
+        var iframe = document.createElement('iframe');
+        iframe.className = 'collect';
+        iframe.src = a.href;
+        iframe.onload = function() {
+          var tries = 0;
+          var poll = setInterval(function() {
+            tries++;
+            try {
+              var doc = iframe.contentDocument || iframe.contentWindow.document;
+              var results = doc.getElementById('results');
+              if (results && results.textContent.indexOf('Results:') !== -1) {
+                clearInterval(poll);
+                var text = results.textContent;
+                var passed = text.match(/(\d+)\s*passed/);
+                var failed = text.match(/(\d+)\s*failed/);
+                var p = passed ? parseInt(passed[1]) : 0;
+                var f = failed ? parseInt(failed[1]) : 0;
+                badge.className = 'badge ' + (f === 0 ? 'pass' : 'fail');
+                badge.textContent = p + '/' + (p + f);
+                if (f > 0) badge.title = text;
+                completed++;
+                status.textContent = 'Running ' + completed + '/' + links.length + '...';
+                if (completed === links.length) status.textContent = 'Done!';
+              }
+            } catch(e) {}
+            if (tries > 200) { clearInterval(poll); badge.className = 'badge skip'; badge.textContent = 'timeout'; completed++; }
+          }, 100);
+        };
+        document.body.appendChild(iframe);
+      });
+    }
+  </script>
 
   <h2>Unit Tests</h2>
   <ul>
